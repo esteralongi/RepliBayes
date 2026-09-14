@@ -1,0 +1,45 @@
+Package: RepliBayes
+Type: Package
+Title: Bayesian Quantification of Replicability
+Version: 0.1.0
+Authors@R: c(
+    person("Ester", "Alongi", email = "ealongi@hsph.harvard.edu",
+           role = c("aut", "cre")),
+    person("Gianmarco", "Altoe", role = "aut"),
+    person("Giovanni", "Parmigiani", role = "aut"))
+Description: A Bayesian hierarchical framework that quantifies the replicability
+    of an effect across several studies as posterior probabilities, defined
+    relative to a practical-relevance threshold on the scale of the effects
+    (epsilon) rather than on p-values. Given study-level data, the package fits
+    a hierarchical (partial-pooling) model and an independence-limit model in
+    'Stan', and computes empirical, retrospective and prospective replication
+    probabilities together with their Monte Carlo standard errors. It also
+    provides threshold-free summaries and helpers for prior-sensitivity and
+    simulation calibration. Methods are described in Alongi, Altoe and
+    Parmigiani, "The Quantification of Replicability".
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+Depends:
+    R (>= 4.1.0)
+Imports:
+    rstan (>= 2.26.0),
+    posterior,
+    tibble,
+    stats
+Suggests:
+    dplyr,
+    usethis,
+    tidyr,
+    ggplot2,
+    patchwork,
+    knitr,
+    rmarkdown,
+    BiocStyle,
+    testthat (>= 3.0.0)
+SystemRequirements: GNU make
+VignetteBuilder: knitr
+RoxygenNote: 7.3.2
+Roxygen: list(markdown = TRUE)
+URL: https://github.com/esteralongi/RepliBayes
+BugReports: https://github.com/esteralongi/RepliBayes/issues
