@@ -36,7 +36,7 @@ rtrunc_t_pos <- function(n, nu, mu, scale) {
 #' Default (elicited) prior hyperparameters
 #'
 #' The illustrative empirical-Bayes hyperparameters used in the paper. The three
-#' generative means (`mu_a`, `mu_alpha`, `mu_sig`) and their scales, and the
+#' generative means (`mu_beta`, `mu_alpha`, `mu_sig`) and their scales, and the
 #' three between-study heterogeneities on the log scale (`mu_tau_*`,
 #' `scale_tau_*`), define the elicited priors of the hierarchical model. All are
 #' Student-t with `nu` degrees of freedom; the intercept, residual scale and the
@@ -48,15 +48,15 @@ rtrunc_t_pos <- function(n, nu, mu, scale) {
 #'
 #' @examples
 #' priors <- default_priors()
-#' priors$mu_a <- 0        # centre the effect prior at zero
+#' priors$mu_beta <- 0        # centre the effect prior at zero
 #' @export
 default_priors <- function() {
   list(
     nu           = 3,
-    mu_a         =  0.05, scale_a         = 0.60,   # effect beta (untruncated)
+    mu_beta         =  0.05, scale_beta         = 0.60,   # effect beta (untruncated)
     mu_alpha     =  8.5,  scale_alpha     = 3.0,    # intercept alpha (> 0)
     mu_sig       =  4.5,  scale_sig       = 2.0,    # residual sigma (> 0)
-    mu_tau_a     = -1.00, scale_tau_a     = 0.30,   # tau_beta  (heterogeneity of the effect)
+    mu_tau_beta     = -1.00, scale_tau_beta     = 0.30,   # tau_beta  (heterogeneity of the effect)
     mu_tau_alpha = -1.30, scale_tau_alpha = 0.40,   # tau_alpha (heterogeneity of the intercept)
     mu_tau_sig   = -1.00, scale_tau_sig   = 0.28    # tau_sigma (heterogeneity of the residual scale)
   )

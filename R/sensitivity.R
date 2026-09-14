@@ -36,10 +36,13 @@
 #' @param priors Prior hyperparameters (see [default_priors()]).
 #' @param eps Practical-relevance threshold; if `NULL`, 10\% of the baseline
 #'   (predictor = 0) mean outcome.
-#' @param target Which heterogeneity's prior to shift: `"tau_a"` (effect,
+#' @param target Which heterogeneity's prior to shift: `"tau_beta"` (effect,
 #'   default), `"tau_alpha"` (intercept) or `"tau_sig"` (residual scale).
 #' @param percentiles Prior percentiles at which to place the median of the
 #'   shifted prior (0.5 reproduces the main analysis).
+#' @param k Consensus level(s) passed to [replication_ess()]. Default 2.
+#' @param m Minimum number of other studies agreeing, for the conditional
+#'   metrics. Default 1.
 #' @param chains,iter_start,iter_max,seed,adapt_delta,max_treedepth Sampler and
 #'   adaptive-convergence settings.
 #' @param verbose If `TRUE`, print progress messages.
@@ -51,37 +54,37 @@
 #'       `iter_used`, `converged`, `max_rhat`, `min_ess`.}
 #'     \item{`grid`}{one row per setting with the prior grid and diagnostics.}
 #'     \item{`p_grid`}{a metric-by-percentile matrix of the point estimates for
-#'       the k = 2 metrics reported in the paper.}
+#'       every metric returned.}
 #'   }
 #'
 #' @examples
 #' \dontrun{
 #' data(synthetic_data)
-#' s <- sensitivity_prior(synthetic_data, target = "tau_a")
+#' s <- sensitivity_prior(synthetic_data, target = "tau_beta")
 #' round(s$p_grid, 3)
 #' }
 #' @export
 sensitivity_prior <- function(data, priors = default_priors(), eps = NULL,
-                              target = c("tau_a", "tau_alpha", "tau_sig"),
+                              target = c("tau_beta", "tau_alpha", "tau_sig"),
                               percentiles = c(0.10, 0.25, 0.50, 0.75, 0.90),
+                              k = 2, m = 1,
                               chains = 4, iter_start = 3000, iter_max = 24000,
                               seed = 42, adapt_delta = 0.99, max_treedepth = 15,
                               verbose = TRUE) {
   stopifnot(all(c("study", "x", "m") %in% names(data)))
-  if (length(unique(data$study)) != 3L)
-    stop("RepliBayes's replication metrics are defined for exactly 3 studies.")
   target <- match.arg(target)
   if (is.null(eps)) eps <- .default_eps(data)
   nu  <- priors$nu
+  S   <- length(unique(data$study))
   say <- function(...) if (verbose) message(...)
 
   ## prior (mu, scale), the Stan data fields to overwrite, and the matching
   ## posterior tau parameter, for the chosen heterogeneity
   tf <- switch(target,
-    tau_a     = list(mu = priors$mu_tau_a,     scale = priors$scale_tau_a,
-                     fmu = "prior_mu_tau_a",     fsc = "prior_scale_tau_a",     post = "tau_a"),
+    tau_beta     = list(mu = priors$mu_tau_beta,     scale = priors$scale_tau_beta,
+                     fmu = "prior_mu_tau_beta",     fsc = "prior_scale_tau_beta",     post = "tau_beta"),
     tau_alpha = list(mu = priors$mu_tau_alpha, scale = priors$scale_tau_alpha,
-                     fmu = "prior_mu_tau_int1",  fsc = "prior_scale_tau_int1",  post = "tau_intercept1"),
+                     fmu = "prior_mu_tau_alpha",  fsc = "prior_scale_tau_alpha",  post = "tau_alpha"),
     tau_sig   = list(mu = priors$mu_tau_sig,   scale = priors$scale_tau_sig,
                      fmu = "prior_mu_tau_sig_m", fsc = "prior_scale_tau_sig_m", post = "tau_sig_m")
   )
@@ -101,46 +104,43 @@ sensitivity_prior <- function(data, priors = default_priors(), eps = NULL,
 
   rows <- vector("list", nrow(grid))
   meta <- vector("list", nrow(grid))
-  for (k in seq_len(nrow(grid))) {
+  for (gi in seq_len(nrow(grid))) {
     say(sprintf("Setting %d/%d: prior median(%s) = %.4g",
-                k, nrow(grid), target, grid$prior_med[k]))
+                gi, nrow(grid), target, grid$prior_med[gi]))
     sd_k <- sd0
-    sd_k[[tf$fmu]] <- grid$mu[k]
-    sd_k[[tf$fsc]] <- grid$scale[k]
+    sd_k[[tf$fmu]] <- grid$mu[gi]
+    sd_k[[tf$fsc]] <- grid$scale[gi]
 
     res <- .fit_until_converged(model, sd_k, chains = chains, iter_start = iter_start,
                                 iter_max = iter_max, seed = seed,
                                 adapt_delta = adapt_delta, max_treedepth = max_treedepth)
-    arr <- rstan::extract(res$fit, pars = c("a", "mu_a", tf$post), permuted = FALSE)
-    re  <- replication_ess(arr[, , "a[1]"], arr[, , "a[2]"], arr[, , "a[3]"],
-                           mu = arr[, , "mu_a"], eps = eps)
-    re$pctl      <- grid$pctl[k]
-    re$mult      <- grid$mult[k]
-    re$prior_med <- grid$prior_med[k]
+    arr   <- rstan::extract(res$fit, pars = c("beta", "mu_beta", tf$post), permuted = FALSE)
+    a_lst <- lapply(seq_len(S), function(s) arr[, , sprintf("beta[%d]", s)])
+    re  <- replication_ess(a_lst, mu = arr[, , "mu_beta"], eps = eps, k = k, m = m)
+    re$pctl      <- grid$pctl[gi]
+    re$mult      <- grid$mult[gi]
+    re$prior_med <- grid$prior_med[gi]
     re$post_med  <- stats::median(as.vector(arr[, , tf$post]))
     re$iter_used <- res$iter
     re$converged <- as.numeric(res$ok)
     re$max_rhat  <- res$max_rhat
     re$min_ess   <- res$min_ess
-    rows[[k]] <- re
+    rows[[gi]] <- re
 
-    meta[[k]] <- data.frame(pctl = grid$pctl[k], prior_med = grid$prior_med[k],
-                            post_med = re$post_med[1], iter_used = res$iter,
-                            converged = as.numeric(res$ok),
-                            max_rhat = res$max_rhat, min_ess = res$min_ess)
+    meta[[gi]] <- data.frame(pctl = grid$pctl[gi], prior_med = grid$prior_med[gi],
+                             post_med = re$post_med[1], iter_used = res$iter,
+                             converged = as.numeric(res$ok),
+                             max_rhat = res$max_rhat, min_ess = res$min_ess)
   }
   sens_long <- do.call(rbind, rows)
   meta_df   <- do.call(rbind, meta)
   if (any(meta_df$converged == 0))
     warning("Some settings did not converge at iter_max; raise iter_max or adapt_delta.")
 
-  ## wide metric-by-percentile matrix for the k = 2 metrics
-  metrics_k2 <- c("P_overall_2", "P_non_null_2", "P_pos_2", "P_null_2", "P_neg_2",
-                  "P_cond_O1_m1", "P_cond_O2_m1", "P_cond_O3_m1", "P_beta",
-                  "P_gen_overall_2", "P_gen_non_null_2", "P_gen_pos_2", "P_gen_null_2",
-                  "P_gen_neg_2", "P_c_pos_2", "P_c_null_2", "P_c_neg_2")
-  sub <- sens_long[sens_long$metric %in% metrics_k2, c("metric", "prior_med", "p")]
-  p_grid <- stats::xtabs(p ~ metric + prior_med, data = sub)[metrics_k2, , drop = FALSE]
+  ## wide metric-by-percentile matrix (every metric returned)
+  metric_order <- unique(sens_long$metric)
+  sub    <- sens_long[, c("metric", "prior_med", "p")]
+  p_grid <- stats::xtabs(p ~ metric + prior_med, data = sub)[metric_order, , drop = FALSE]
 
   list(metrics = sens_long, grid = meta_df, p_grid = p_grid)
 }

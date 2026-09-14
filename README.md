@@ -37,7 +37,7 @@ Supply your own priors or threshold:
 
 ```r
 priors <- default_priors()
-priors$mu_a <- 0
+priors$mu_beta <- 0
 res <- fit_replicability(synthetic_data, priors = priors, eps = 0.86)
 ```
 
@@ -48,17 +48,26 @@ res <- fit_replicability(synthetic_data, priors = priors, eps = 0.86)
 res <- fit_replicability(synthetic_data)
 
 # 2. Prior sensitivity: shift the prior on a chosen heterogeneity
-sens <- sensitivity_prior(synthetic_data, target = "tau_a")
+sens <- sensitivity_prior(synthetic_data, target = "tau_beta")
 round(sens$p_grid, 3)
 
 # 3. Simulation calibration: choose what to vary in the generative model
-sim <- simulate_replicability(res, synthetic_data, vary = "tau_a", R = 30)
+sim <- simulate_replicability(res, synthetic_data, vary = "tau_beta", R = 30)
 subset(sim, metric == "P_beta")
 ```
 
 `sensitivity_prior()` and `simulate_replicability()` both accept
-`target` / `vary = "tau_a"` (effect), `"tau_alpha"` (intercept) or `"tau_sig"`
+`target` / `vary = "tau_beta"` (effect), `"tau_alpha"` (intercept) or `"tau_sig"`
 (residual scale).
+
+The metrics are general: they work with any number of studies `S`, any
+consensus level(s) `k` (argument `k`, default 2), and any minimum number of
+agreeing studies `m` in the conditional metrics (argument `m`, default 1). Study
+effects are passed as a list of `S` draw matrices, e.g.
+`replication_ess(list(a1, a2, a3), mu = mu_beta, eps = 0.86, k = 2)`. For the
+retrospective/prospective analyses, `fit_replicability()` lets you choose the
+body of evidence explicitly via `retro_target` / `retro_evidence` (size 1..S-1)
+and `pro_evidence` (size 1..S).
 
 ## Building blocks
 

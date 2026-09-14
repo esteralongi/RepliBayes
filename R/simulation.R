@@ -25,7 +25,7 @@
 #' p^{(r)})/\sqrt{R_{\mathrm{used}}}}.
 #'
 #' The empirical ground truth (study sample sizes, genotype frequencies, and the
-#' generative locations `mu_a`, `a`, `mu_alpha`, `alpha`, `mu_sig_m`, `sigma_M`)
+#' generative locations `mu_beta`, `a`, `mu_alpha`, `alpha`, `mu_sig_m`, `sigma_M`)
 #' is taken from a fitted hierarchical model; the chosen heterogeneity is then
 #' set to the requested percentiles of its prior.
 #'
@@ -38,11 +38,14 @@
 #'   (see [default_priors()]).
 #' @param eps Practical-relevance threshold; if `NULL`, taken from the `RepliBayes`
 #'   object or computed as 10\% of the baseline mean outcome.
-#' @param vary Which generative component to vary across levels: `"tau_a"`
+#' @param vary Which generative component to vary across levels: `"tau_beta"`
 #'   (effect heterogeneity, default), `"tau_alpha"` (intercept heterogeneity) or
 #'   `"tau_sig"` (residual-scale heterogeneity).
 #' @param levels A named numeric vector of prior percentiles defining the
 #'   scenarios (default low/medium/high = 0.10/0.50/0.90).
+#' @param k Consensus level(s) for the metrics. Default 2.
+#' @param m Minimum number of other studies agreeing, for the conditional
+#'   metrics. Default 1.
 #' @param R Number of simulated datasets per level.
 #' @param seed Base seed; replicate `r` uses `seed + r`.
 #' @param chains,iter,warmup,adapt_delta,max_treedepth Sampler settings for each
@@ -51,7 +54,7 @@
 #'
 #' @return A tibble with one row per (level, metric): columns `level`, `pctl`,
 #'   `metric`, `value` (mean across converged replicates), `mcse`, and `n_used`
-#'   (number of converged replicates). Metric names are the internal names of
+#'   (number of converged replicates). Metric names are the paper-style names of
 #'   [compute_replication_probs_hier()].
 #'
 #' @details Only replicates that meet the convergence criterion (no divergences,
@@ -62,13 +65,14 @@
 #' \dontrun{
 #' data(synthetic_data)
 #' res <- fit_replicability(synthetic_data)
-#' sim <- simulate_replicability(res, synthetic_data, vary = "tau_a", R = 30)
+#' sim <- simulate_replicability(res, synthetic_data, vary = "tau_beta", R = 30)
 #' subset(sim, metric == "P_beta")
 #' }
 #' @export
 simulate_replicability <- function(fit, data, priors = default_priors(), eps = NULL,
-                                   vary = c("tau_a", "tau_alpha", "tau_sig"),
+                                   vary = c("tau_beta", "tau_alpha", "tau_sig"),
                                    levels = c(low = 0.10, medium = 0.50, high = 0.90),
+                                   k = 2, m = 1,
                                    R = 30, seed = 1000,
                                    chains = 4, iter = 3000, warmup = floor(iter / 2),
                                    adapt_delta = 0.99, max_treedepth = 15,
@@ -85,15 +89,12 @@ simulate_replicability <- function(fit, data, priors = default_priors(), eps = N
 
   ## study structure from the data
   groups <- sort(unique(data$study)); S <- length(groups)
-  if (S != 3L)
-    stop("RepliBayes's replication metrics are defined for exactly 3 studies; ",
-         "'data$study' has ", S, ".")
   N_s    <- vapply(groups, function(g) sum(data$study == g), integer(1))
   geno   <- lapply(groups, function(g) .geno_probs(data$x[data$study == g]))
 
   ## empirical ground-truth locations from the fitted model
   post <- rstan::extract(fit)
-  mu_b_real     <- mean(post$mu_a);      b_s_real   <- colMeans(post$a)
+  mu_b_real     <- mean(post$mu_beta);      b_s_real   <- colMeans(post$beta)
   mu_alpha_real <- mean(post$mu_alpha);  a_s_real   <- colMeans(post$alpha)
   mu_sigma_real <- mean(post$mu_sig_m);  sig_s_real <- colMeans(post$sigma_M)
 
@@ -102,7 +103,7 @@ simulate_replicability <- function(fit, data, priors = default_priors(), eps = N
   z_beta    <- stats::qt(placement, df = nu)   # signed effect positions
   u_trunc   <- placement                        # positions for truncated positives
   tp <- switch(vary,
-    tau_a     = list(mu = priors$mu_tau_a,     scale = priors$scale_tau_a),
+    tau_beta     = list(mu = priors$mu_tau_beta,     scale = priors$scale_tau_beta),
     tau_alpha = list(mu = priors$mu_tau_alpha, scale = priors$scale_tau_alpha),
     tau_sig   = list(mu = priors$mu_tau_sig,   scale = priors$scale_tau_sig)
   )
@@ -118,7 +119,7 @@ simulate_replicability <- function(fit, data, priors = default_priors(), eps = N
 
     ## ground-truth study parameters for this level
     b_s <- b_s_real; a_s <- a_s_real; sig_s <- sig_s_real
-    if (vary == "tau_a")     b_s   <- mu_b_real + tau_val * z_beta
+    if (vary == "tau_beta")     b_s   <- mu_b_real + tau_val * z_beta
     if (vary == "tau_alpha") a_s   <- qt_trunc_scaled_vec(u_trunc, nu, mu_alpha_real, tau_val)
     if (vary == "tau_sig")   sig_s <- qt_trunc_scaled_vec(u_trunc, nu, mu_sigma_real, tau_val)
 
@@ -135,10 +136,11 @@ simulate_replicability <- function(fit, data, priors = default_priors(), eps = N
       ok  <- rstan::get_num_divergent(fitr) == 0 &&
              max(s[, "Rhat"], na.rm = TRUE) < 1.02 &&
              min(s[, "n_eff"], na.rm = TRUE) > 100
-      dr  <- rstan::extract(fitr)
-      m   <- compute_replication_probs_hier(dr$a[, 1], dr$a[, 2], dr$a[, 3], dr$mu_a, eps)
-      if (is.null(metric_names)) metric_names <- names(m)
-      metrics_list[[r]] <- as.numeric(m); diag_ok[r] <- ok
+      dr    <- rstan::extract(fitr)
+      a_lst <- lapply(seq_len(S), function(s) dr$beta[, s])
+      pr    <- compute_replication_probs_hier(a_lst, dr$mu_beta, eps, k = k, m = m)
+      if (is.null(metric_names)) metric_names <- names(pr)
+      metrics_list[[r]] <- as.numeric(pr); diag_ok[r] <- ok
       rm(fitr, dr)
     }
 
