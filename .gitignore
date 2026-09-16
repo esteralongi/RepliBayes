@@ -1,0 +1,14 @@
+# RStudio / R session cruft
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+# OS
+.DS_Store
+
+# build artefacts
+*.o
+*.so
+src/*.o
+src/*.so

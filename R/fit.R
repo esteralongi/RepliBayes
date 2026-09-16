@@ -18,17 +18,20 @@
 #' @param priors Prior hyperparameters (see [default_priors()]).
 #' @param chains,iter,warmup,seed Passed to [rstan::sampling()].
 #' @param adapt_delta,max_treedepth NUTS control parameters.
+#' @param refresh Stan's progress-printing frequency; `0` (the default) silences
+#'   the per-chain sampler output. Set e.g. `refresh = 200` to see progress.
 #' @param ... Further arguments passed to [rstan::sampling()].
 #'
 #' @return A [rstan::stanfit-class] object.
 #' @export
 fit_hierarchical <- function(data, priors = default_priors(),
                              chains = 4, iter = 3000, warmup = floor(iter / 2),
-                             seed = 42, adapt_delta = 0.99, max_treedepth = 15, ...) {
+                             seed = 42, adapt_delta = 0.99, max_treedepth = 15,
+                             refresh = 0, ...) {
   sdat <- build_stan_data(data, priors, "hierarchical")
   mod  <- .stan_model("model_hierarchical.stan")
   rstan::sampling(mod, data = sdat, chains = chains, iter = iter, warmup = warmup,
-                  seed = seed,
+                  seed = seed, refresh = refresh,
                   control = list(adapt_delta = adapt_delta, max_treedepth = max_treedepth),
                   ...)
 }
@@ -44,11 +47,12 @@ fit_hierarchical <- function(data, priors = default_priors(),
 #' @export
 fit_independence <- function(data, priors = default_priors(),
                              chains = 4, iter = 3000, warmup = floor(iter / 2),
-                             seed = 42, adapt_delta = 0.99, max_treedepth = 15, ...) {
+                             seed = 42, adapt_delta = 0.99, max_treedepth = 15,
+                             refresh = 0, ...) {
   sdat <- build_stan_data(data, priors, "independence")
   mod  <- .stan_model("model_independence.stan")
   rstan::sampling(mod, data = sdat, chains = chains, iter = iter, warmup = warmup,
-                  seed = seed,
+                  seed = seed, refresh = refresh,
                   control = list(adapt_delta = adapt_delta, max_treedepth = max_treedepth),
                   ...)
 }

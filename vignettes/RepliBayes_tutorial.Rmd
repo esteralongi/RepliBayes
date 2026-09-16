@@ -1,0 +1,603 @@
+---
+title: "The Quantification of Replicability with RepliBayes: an illustrative example"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{RepliBayes_tutorial}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE, comment = "#>",
+  warning = FALSE, message = FALSE,
+  fig.width = 6, fig.height = 4
+)
+options(mc.cores = 1)
+```
+
+> **Note.** Building this vignette fits several Stan models and takes a few
+> minutes (and needs a C++ compiler; see below). To read it quickly without
+> rebuilding, open the pre-built HTML.
+
+# What this package does
+
+`RepliBayes` implements the Bayesian framework of Alongi, Altoè and Parmigiani,
+*The Quantification of Replicability*. Suppose the same effect has been studied
+in several studies. Instead of the yes/no question "did it reach statistical
+significance again?", the framework asks a graded question:
+
+> **How probable is it that the studies agree the effect is real and practically
+> relevant?**
+
+It answers with **posterior probabilities**, defined relative to a
+practical-relevance threshold `eps` on the *scale of the effect itself*, 
+from one Bayesian hierarchical model:
+
+$$
+y_{si}\sim \mathcal N(\alpha_s + \beta_s\,x_{si},\ \sigma_s^2),\qquad
+\beta_s\sim t_3(\beta,\tau_\beta),\quad
+\alpha_s\sim t_3^{+}(\alpha,\tau_\alpha),\quad
+\sigma_s\sim t_3^{+}(\sigma,\tau_\sigma),
+$$
+
+for studies $s = 1,\dots,S$. $\beta_s$ is the effect in study $s$, $\beta$ the
+shared **generative** effect, and $\tau_\beta$ how much the studies differ. A
+study effect is *positive* if $\beta_s>\varepsilon$, *negative* if
+$\beta_s<-\varepsilon$, *null* if $|\beta_s|\le\varepsilon$; "replication at
+consensus level $k$" means at least $k$ of the $S$ studies fall in the same
+category.
+
+This tutorial reproduces the whole analysis on a small **synthetic** dataset
+shipped with the package. It assumes no prior knowledge of R.
+
+# Installing everything from scratch
+
+You do this once.
+
+**1. Install R** from [cran.r-project.org](https://cran.r-project.org) (and,
+optionally, [RStudio](https://posit.co/download/rstudio-desktop/)).
+
+**2. Install a C++ compiler** (needed by Stan, which `RepliBayes` uses):
+Windows → [Rtools](https://cran.r-project.org/bin/windows/Rtools/);
+macOS → run `xcode-select --install` in Terminal; Linux → system `g++`.
+
+**3. Install `rstan` and the packages used for the plots:**
+
+```{r install, eval = FALSE}
+install.packages(c("rstan", "ggplot2", "patchwork", "knitr", "remotes"))
+```
+
+**4. Install `RepliBayes`:**
+
+```{r install-pkg, eval = FALSE}
+remotes::install_github("esteralongi/RepliBayes", build_vignettes = TRUE)
+```
+
+Everything below is runnable R code; the `#>` lines are what R prints back, and
+the numerical results are shown as tables.
+
+# Load the package and the data
+
+```{r load}
+library(rstan)
+library(ggplot2)
+library(patchwork)
+library(RepliBayes)
+set.seed(42)
+
+## small helper: render a data frame / matrix as a table
+show_tbl <- function(x, digits = 3, caption = NULL)
+  knitr::kable(x, digits = digits, caption = caption)
+
+## a consistent colour palette used throughout
+study_cols <- c("Study 1" = "#0072B2", "Study 2" = "#009E73", "Study 3" = "#E69F00")
+gen_col <- "#2C3E50"; prior_col <- "grey50"; obs_col <- "#0072B2"; pred_col <- "#A51C30"
+```
+
+```{r data}
+data(synthetic_data)         # columns: study, x, m
+show_tbl(head(synthetic_data), caption = "First rows of the synthetic data")
+show_tbl(as.data.frame(table(synthetic_data$study),
+                       responseName = "n"),
+         caption = "Number of observations per study",
+         digits = 0)
+```
+
+# The priors
+
+`default_priors()` returns the illustrative hyperparameters used in the paper
+(`beta` = effect, `alpha` = intercept, `sig` = residual scale, and the three
+`tau_*` heterogeneities). Copy the list and edit any field to use your own.
+
+```{r priors}
+priors <- default_priors()
+nu <- priors$nu
+show_tbl(data.frame(hyperparameter = names(unlist(priors)),
+                    value = unlist(priors), row.names = NULL),
+         caption = "Elicited prior hyperparameters")
+```
+
+What these priors imply (simulated draws; `rtrunc_t_pos()` draws from a positive
+Student-$t$):
+
+```{r prior-plot, fig.width = 7, fig.height = 4.5}
+N <- 40000
+pri <- data.frame(
+  value = c(
+    priors$mu_beta  + priors$scale_beta  * rt(N, nu),
+    rtrunc_t_pos(N, nu, priors$mu_alpha,     priors$scale_alpha),
+    rtrunc_t_pos(N, nu, priors$mu_sig,       priors$scale_sig),
+    rtrunc_t_pos(N, nu, priors$mu_tau_beta,  priors$scale_tau_beta),
+    rtrunc_t_pos(N, nu, priors$mu_tau_alpha, priors$scale_tau_alpha),
+    rtrunc_t_pos(N, nu, priors$mu_tau_sig,   priors$scale_tau_sig)),
+  param = factor(rep(c("beta","alpha","sigma","tau[beta]","tau[alpha]","tau[sigma]"),
+                     each = N),
+                 levels = c("beta","alpha","sigma","tau[beta]","tau[alpha]","tau[sigma]")))
+keep <- ave(pri$value, pri$param,
+            FUN = function(v) v >= quantile(v,.005) & v <= quantile(v,.995)) == 1
+ggplot(pri[keep,], aes(value)) +
+  geom_density(fill = "#457B9D", colour = "#457B9D", alpha = .4) +
+  facet_wrap(~ param, scales = "free", labeller = label_parsed) +
+  labs(x = "", y = "prior density") + theme_minimal(base_size = 11)
+```
+
+# The whole analysis in one call
+
+`fit_replicability()` fits the hierarchical model and the independence-limit
+model, then computes every replication probability with its Monte Carlo standard
+error (MCSE). Arguments here reproduce the paper's setting (`k = 2`, `m = 1`,
+`S = 3` read from the data; `eps` defaults to 10% of the baseline mean outcome).
+`chains`/`iter` are reduced so the tutorial builds quickly — use the defaults
+(`chains = 4, iter = 3000`) for real work.
+
+```{r fit, results = "hide"}
+res <- fit_replicability(
+  synthetic_data, priors = priors, k = 2, m = 1,
+  chains = 2, iter = 3000, verbose = FALSE
+)
+```
+
+```{r fit-print}
+res                          # compact overview (studies, eps, a few metrics)
+```
+
+# Posterior diagnostics: looking at the chains
+
+`res$fit_hierarchical` is a full `stanfit` object, so you can inspect the MCMC
+chains directly. Sampling is healthy when there are no divergences, split-$\widehat
+R$ is close to 1, and the effective sample sizes are adequate.
+
+```{r diag-hier, fig.width = 6.5, fig.height = 4}
+pars <- c("mu_beta", "tau_beta", "tau_alpha", "tau_sig_m", "mu_alpha", "mu_sig_m")
+rstan::check_hmc_diagnostics(res$fit_hierarchical)
+show_tbl(rstan::summary(res$fit_hierarchical, pars = pars)$summary[, c("Rhat", "n_eff")],
+         caption = "Hierarchical model: split-Rhat and effective sample size")
+rstan::traceplot(res$fit_hierarchical, pars = pars)
+```
+
+The trace plot draws one coloured line per chain; well-mixed chains overlap like
+a "fuzzy caterpillar". To get the raw draws with the **chains kept separate**, use
+`permuted = FALSE` (plain `rstan::extract()` merges them):
+
+```{r chains-array}
+arr <- rstan::extract(res$fit_hierarchical, pars = "mu_beta", permuted = FALSE)
+dim(arr)                 # iterations x chains x parameters
+show_tbl(arr[1:3, , "mu_beta"], caption = "First 3 iterations of each chain (mu_beta)")
+```
+
+The independence-limit fit is checked the same way (it has no `tau_*`
+parameters):
+
+```{r diag-indep}
+rstan::check_hmc_diagnostics(res$fit_independence)
+show_tbl(rstan::summary(res$fit_independence,
+                        pars = c("mu_beta", "mu_alpha", "mu_sig_m"))$summary[, c("Rhat", "n_eff")],
+         caption = "Independence-limit model: split-Rhat and effective sample size")
+```
+
+# Reading the metrics
+
+Each row is a metric; `p` is the posterior probability and `mcse` its Monte Carlo
+error (`k`, `n`, `ess` are the count, sample size and effective sample size behind
+each probability).
+
+```{r metrics}
+show_tbl(res$metrics_hierarchical,
+         caption = "Hierarchical model: replication probabilities with MCSE")
+show_tbl(res$metrics_independence,
+         caption = "Independence limit: replication probabilities with MCSE")
+```
+
+Names (with `S = 3`, `k = 2`): `P_overall_2` = at least 2 studies agree;
+`P_pos_2`/`P_neg_2`/`P_null_2` = at least 2 positive/negative/null;
+`P_cond_O1_m1` = given study 1 detects, it agrees with $\ge 1$ other study;
+`P_beta` = $P(|\beta|>\varepsilon)$; `P_gen_*` add consistency with the sign of
+the generative effect; `P_c_*` are conditional on that sign.
+
+```{r posterior-draws, include = FALSE}
+## posterior draws (used by the plots below)
+post_h <- rstan::extract(res$fit_hierarchical)   # $beta [iter x S], $mu_beta, ...
+post_i <- rstan::extract(res$fit_independence)   # $beta [iter x S]
+S <- res$S
+study_labels <- paste("Study", res$studies)
+eps <- res$eps
+```
+
+# Posterior of the effects
+
+## Independence limit
+
+Posterior densities of the three study effects with the (near-flat) prior
+overlaid; dotted lines mark $\pm\varepsilon$.
+
+```{r desc-indep, fig.width = 6, fig.height = 3.6}
+lev <- c(study_labels, "Prior"); pal <- c(study_cols, "Prior" = prior_col)
+xr  <- c(-2.5, 3)
+tau_fix  <- qt_trunc_scaled_vec(0.999, nu, priors$mu_tau_beta, priors$scale_tau_beta)
+beta_i0  <- priors$mu_beta + priors$scale_beta * rt(40000, nu)
+prior_i  <- beta_i0 + tau_fix * rt(40000, nu)                    # independence-limit prior
+
+df_post  <- data.frame(a = as.vector(post_i$beta),
+                       study = factor(rep(study_labels, each = nrow(post_i$beta)), levels = lev))
+df_prior <- data.frame(a = prior_i, study = factor("Prior", levels = lev))
+clip <- function(d) subset(d, a >= xr[1] & a <= xr[2])
+ggplot() +
+  geom_density(data = clip(df_post),  aes(a, color = study, fill = study),
+               alpha = .4, linewidth = .5) +
+  geom_density(data = clip(df_prior), aes(a, color = study),
+               linewidth = .6, linetype = "dashed") +
+  scale_color_manual(values = pal) + scale_fill_manual(values = pal, guide = "none") +
+  geom_vline(xintercept = c(-eps, eps), linetype = "dotted") +
+  coord_cartesian(xlim = xr) +
+  labs(x = expression(beta), y = "density", color = NULL) +
+  theme_minimal(base_size = 12) + theme(legend.position = "top")
+```
+
+```{r desc-violin, fig.width = 5, fig.height = 3.2}
+dfv <- data.frame(a = as.vector(post_i$beta),
+                  study = factor(rep(study_labels, each = nrow(post_i$beta)),
+                                 levels = study_labels))
+ggplot(dfv, aes(study, a, fill = study, color = study)) +
+  geom_violin(trim = FALSE, alpha = .5) +
+  geom_boxplot(width = .1, fill = "white", color = "black", outlier.shape = NA) +
+  geom_hline(yintercept = c(-eps, eps), linetype = "dotted") +
+  scale_color_manual(values = study_cols) + scale_fill_manual(values = study_cols) +
+  labs(x = "", y = expression(beta[s])) +
+  theme_minimal(base_size = 11) + theme(legend.position = "none")
+```
+
+## Hierarchical model
+
+The three study effects, the generative effect $\beta$, and the (correlated)
+prior:
+
+```{r desc-hier, fig.width = 6, fig.height = 3.6}
+lev_h <- c(study_labels, "Generative", "Prior")
+pal_h <- c(study_cols, "Generative" = gen_col, "Prior" = prior_col)
+xr_h  <- c(-1.5, 2)
+tau_b   <- rtrunc_t_pos(40000, nu, priors$mu_tau_beta, priors$scale_tau_beta)
+beta_h0 <- priors$mu_beta + priors$scale_beta * rt(40000, nu)
+prior_h <- beta_h0 + tau_b * rt(40000, nu)                       # hierarchical prior
+mu_prior <- beta_h0
+
+df_ph <- data.frame(a = as.vector(post_h$beta),
+                    study = factor(rep(study_labels, each = nrow(post_h$beta)), levels = lev_h))
+df_mu <- data.frame(a = post_h$mu_beta, study = factor("Generative", levels = lev_h))
+df_pr <- data.frame(a = prior_h,        study = factor("Prior", levels = lev_h))
+clh <- function(d) subset(d, a >= xr_h[1] & a <= xr_h[2])
+ggplot() +
+  geom_density(data = clh(df_ph), aes(a, color = study, fill = study), alpha = .4, linewidth = .5) +
+  geom_density(data = clh(df_mu), aes(a, color = study, fill = study), alpha = .5, linewidth = .8) +
+  geom_density(data = clh(df_pr), aes(a, color = study), linewidth = .6, linetype = "dashed") +
+  scale_color_manual(values = pal_h, breaks = lev_h) +
+  scale_fill_manual(values = pal_h, breaks = lev_h, guide = "none") +
+  geom_vline(xintercept = c(-eps, eps), linetype = "dotted") +
+  coord_cartesian(xlim = xr_h) +
+  labs(x = expression(beta), y = "density", color = NULL) +
+  theme_minimal(base_size = 12) + theme(legend.position = "top")
+```
+
+The generative effect $\beta$, prior vs posterior:
+
+```{r desc-mu, fig.width = 5, fig.height = 3}
+xrm <- as.numeric(quantile(c(mu_prior, post_h$mu_beta), c(.005, .995)))
+dfm <- data.frame(value = c(mu_prior, post_h$mu_beta),
+                  type = factor(rep(c("Prior","Posterior"),
+                                    c(length(mu_prior), length(post_h$mu_beta))),
+                                levels = c("Prior","Posterior")))
+ggplot(subset(dfm, value >= xrm[1] & value <= xrm[2]), aes(value, color = type, fill = type)) +
+  geom_density(alpha = .4, linewidth = .3) +
+  geom_vline(xintercept = c(-eps, eps), linetype = "dotted") +
+  scale_color_manual(values = c(Prior = "gray70", Posterior = "gray20")) +
+  scale_fill_manual(values  = c(Prior = "gray70", Posterior = "gray20")) +
+  coord_cartesian(xlim = xrm) +
+  labs(x = "generative effect", y = "density", color = NULL, fill = NULL) +
+  theme_minimal(base_size = 11) + theme(legend.position = "top")
+```
+
+# Metric names and labels
+
+```{r metric-labels}
+metrics_k2 <- c("P_overall_2","P_non_null_2","P_pos_2","P_null_2","P_neg_2",
+                "P_cond_O1_m1","P_cond_O2_m1","P_cond_O3_m1","P_beta",
+                "P_gen_overall_2","P_gen_non_null_2","P_gen_pos_2","P_gen_null_2",
+                "P_gen_neg_2","P_c_pos_2","P_c_null_2","P_c_neg_2")
+metrics_base <- metrics_k2[1:8]        # study-level metrics (independence limit)
+lab <- c(
+  P_overall_2="P['overall,2']", P_non_null_2="P['non-null,2']", P_pos_2="P['pos,2']",
+  P_null_2="P['null,2']", P_neg_2="P['neg,2']",
+  P_cond_O1_m1="P['cond|O1']", P_cond_O2_m1="P['cond|O2']", P_cond_O3_m1="P['cond|O3']",
+  P_beta="P[beta]",
+  P_gen_overall_2="P['gen,overall,2']", P_gen_non_null_2="P['gen,non-null,2']",
+  P_gen_pos_2="P['gen,pos,2']", P_gen_null_2="P['gen,null,2']", P_gen_neg_2="P['gen,neg,2']",
+  P_c_pos_2="P['c,pos,2']", P_c_null_2="P['c,null,2']", P_c_neg_2="P['c,neg,2']")
+```
+
+# From prior to posterior
+
+A triangle marks the prior value of each metric and a dot the posterior; the
+triangle points up if the data raise the probability, down if they lower it. We
+recompute the metrics on prior draws with `compute_replication_probs_*()`.
+
+```{r prior-post-setup}
+prior_indep <- compute_replication_probs_indep(list(prior_i, prior_i, prior_i),
+                                               eps = eps, k = 2)
+prior_hier  <- compute_replication_probs_hier(
+  list(beta_h0 + tau_b*rt(40000,nu), beta_h0 + tau_b*rt(40000,nu), beta_h0 + tau_b*rt(40000,nu)),
+  mu = mu_prior, eps = eps, k = 2)
+
+tri_plot <- function(prior_named, post_tbl, metrics, title) {
+  post_p <- stats::setNames(post_tbl$p, post_tbl$metric)
+  pri    <- unlist(prior_named)
+  d <- data.frame(metric = metrics,
+                  Prior = as.numeric(pri[metrics]), Posterior = as.numeric(post_p[metrics]))
+  d <- d[!is.na(d$Prior) & !is.na(d$Posterior), ]
+  d$metric <- factor(d$metric, levels = d$metric)
+  long <- rbind(data.frame(metric = d$metric, p = d$Prior,     type = "Prior"),
+                data.frame(metric = d$metric, p = d$Posterior, type = "Posterior"))
+  long$shape <- ifelse(long$type == "Posterior", "Posterior",
+                       ifelse(d$Prior[match(long$metric, d$metric)] <
+                              d$Posterior[match(long$metric, d$metric)], "Prior_up", "Prior_down"))
+  ggplot(long, aes(metric, p)) +
+    geom_line(aes(group = metric), color = "grey70", linewidth = .4) +
+    geom_point(aes(shape = shape), size = 2.2, color = "grey20", fill = "grey20") +
+    scale_shape_manual(values = c(Posterior = 16, Prior_up = 24, Prior_down = 25),
+                       breaks = c("Posterior","Prior_up"), labels = c("Posterior","Prior")) +
+    scale_x_discrete(labels = function(x) parse(text = lab[x])) +
+    ylim(0, 1) + labs(title = title, x = "", y = "probability", shape = NULL) +
+    theme_minimal(base_size = 10) +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          legend.position = "top", panel.grid.major.x = element_blank())
+}
+```
+
+```{r prior-post-indep, fig.width = 6, fig.height = 3.8}
+tri_plot(prior_indep, res$metrics_independence, metrics_base, "Independence limit")
+```
+
+```{r prior-post-hier, fig.width = 8, fig.height = 4}
+tri_plot(prior_hier, res$metrics_hierarchical, metrics_k2, "Hierarchical model")
+```
+
+# Independence vs hierarchical
+
+```{r indep-hier, fig.width = 8, fig.height = 4}
+shared <- intersect(res$metrics_independence$metric, res$metrics_hierarchical$metric)
+dih <- rbind(
+  data.frame(res$metrics_independence[res$metrics_independence$metric %in% shared,
+                                      c("metric","p")], model = "Independent"),
+  data.frame(res$metrics_hierarchical[res$metrics_hierarchical$metric %in% shared,
+                                      c("metric","p")], model = "Hierarchical"))
+dih$metric <- factor(dih$metric, levels = metrics_k2)
+dih$model  <- factor(dih$model, levels = c("Independent","Hierarchical"))
+ggplot(dih, aes(metric, p, fill = model)) +
+  geom_col(position = position_dodge2(preserve = "single"), width = .7,
+           colour = "black", linewidth = .3) +
+  scale_fill_manual(values = c(Independent = "#7F8C8D", Hierarchical = "#A51C30")) +
+  scale_x_discrete(labels = function(x) parse(text = lab[x])) +
+  ylim(0, 1) + labs(x = "", y = "posterior probability", fill = NULL) +
+  theme_minimal(base_size = 11) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "top")
+```
+
+# Threshold-free summaries
+
+`replication_measures_multi()` needs no threshold: it reports the range of the
+study effects and their overlap (the grey area shared by all study posteriors;
+1 = identical, 0 = disjoint).
+
+```{r threshold-free-num}
+beta_i_list <- lapply(seq_len(S), function(s) post_i$beta[, s])
+beta_h_list <- lapply(seq_len(S), function(s) post_h$beta[, s])
+show_tbl(rbind(independent  = unlist(replication_measures_multi(beta_i_list)),
+               hierarchical = unlist(replication_measures_multi(beta_h_list))),
+         caption = "Threshold-free summaries: divergence and overlap")
+```
+
+```{r overlap-plot, fig.width = 7, fig.height = 3.2}
+overlap_plot <- function(beta_list, title) {
+  xr   <- as.numeric(quantile(unlist(beta_list), c(.005, .995)))
+  dens <- function(x) density(x, from = xr[1], to = xr[2], n = 512)
+  g    <- dens(beta_list[[1]])$x
+  ov   <- data.frame(a = g, y = Reduce(pmin, lapply(beta_list, function(x) dens(x)$y)))
+  curves <- do.call(rbind, Map(function(x, s)
+    data.frame(a = dens(x)$x, y = dens(x)$y, study = s), beta_list, study_labels))
+  ov_val <- sum(ov$y) * (g[2] - g[1])
+  ggplot() +
+    geom_area(data = ov, aes(a, y), fill = "grey50", alpha = .55) +
+    geom_line(data = curves, aes(a, y, color = study), linewidth = .7) +
+    geom_vline(xintercept = c(-eps, eps), linetype = "dotted") +
+    scale_color_manual(values = study_cols) +
+    labs(title = sprintf("%s (overlap = %.2f)", title, ov_val),
+         x = expression(beta), y = "density", color = NULL) +
+    theme_minimal(base_size = 11) + theme(legend.position = "top")
+}
+overlap_plot(beta_i_list, "Independence limit") +
+  overlap_plot(beta_h_list, "Hierarchical") +
+  plot_layout(guides = "collect") & theme(legend.position = "top")
+```
+
+# Predictive replicability
+
+## Retrospective: a left-out study
+
+`fit_replicability()` already left out one study and predicted it from a body of
+evidence (the other studies). The agreement between the two effect distributions
+is what `res$metrics_retrospective` quantifies.
+
+```{r retro-metrics}
+cat(sprintf("target study: %s;  body of evidence: %s\n",
+            res$retro_target, paste(res$retro_evidence, collapse = ", ")))
+show_tbl(res$metrics_retrospective,
+         caption = "Retrospective metrics (left-out study vs prediction)")
+```
+
+```{r retro-density, fig.width = 5.5, fig.height = 3.2}
+a_hat <- predict_new_study(res$fit_retro_evidence, nu = nu, seed = 42)  # predicted new study
+a_obs <- rstan::extract(res$fit_retro_obs)$beta[, 1]                    # observed left-out study
+dfr <- data.frame(a = c(a_obs, a_hat),
+                  type = rep(c("Observed (left-out)","Predicted (new study)"),
+                             c(length(a_obs), length(a_hat))))
+xrr <- as.numeric(quantile(dfr$a, c(.005, .995)))
+ggplot(subset(dfr, a >= xrr[1] & a <= xrr[2]), aes(a, color = type, fill = type)) +
+  geom_density(alpha = .35, linewidth = .6) +
+  geom_vline(xintercept = c(-eps, eps), linetype = "dotted") +
+  scale_color_manual(values = c("Observed (left-out)" = obs_col,
+                                "Predicted (new study)" = pred_col)) +
+  scale_fill_manual(values  = c("Observed (left-out)" = obs_col,
+                                "Predicted (new study)" = pred_col)) +
+  labs(x = expression(beta), y = "density", color = NULL, fill = NULL) +
+  theme_minimal(base_size = 11) + theme(legend.position = "top")
+```
+
+## Prospective: a brand-new study
+
+```{r prosp}
+cat(sprintf("body of evidence: %s\n", paste(res$pro_evidence, collapse = ", ")))
+show_tbl(res$metrics_prospective,
+         caption = "Prospective metrics (a new study from the full model)")
+```
+
+# Prior sensitivity
+
+We refit the analysis while shifting the prior median of $\tau_\beta$ across
+percentiles of its elicited prior (0.5 reproduces the main analysis). This
+refits the model once per setting; a reduced grid and short chains are used here
+so the tutorial builds.
+
+```{r sensitivity, results = "hide"}
+sens <- sensitivity_prior(
+  synthetic_data, target = "tau_beta", k = 2, m = 1,
+  percentiles = c(0.10, 0.50, 0.90),
+  chains = 2, iter_start = 800, iter_max = 1600, verbose = FALSE
+)
+```
+
+Per-setting convergence, and the metric-by-prior-median grid:
+
+```{r sensitivity-tables}
+show_tbl(sens$grid, caption = "Prior sensitivity: per-setting convergence diagnostics")
+show_tbl(as.matrix(sens$p_grid)[metrics_k2, ],
+         caption = "Point estimates by prior median of tau_beta (rows = metrics)")
+```
+
+Flat lines mean a metric is insensitive to the prior on $\tau_\beta$; steep lines
+mean it is driven by it.
+
+```{r sensitivity-plot, fig.width = 8, fig.height = 6}
+sm <- sens$metrics[sens$metrics$metric %in% metrics_k2, ]
+sm$metric <- factor(sm$metric, levels = metrics_k2)
+ggplot(sm, aes(prior_med, p)) +
+  geom_line(color = "#457B9D", linewidth = .6) +
+  geom_point(color = "#457B9D", size = 1.2) +
+  facet_wrap(~ metric, labeller = as_labeller(lab, label_parsed)) +
+  ylim(0, 1) +
+  labs(x = expression(median(tau[beta])~"(prior)"), y = "probability") +
+  theme_minimal(base_size = 10) + theme(panel.grid.minor = element_blank())
+```
+
+# Calibration through simulation
+
+This varies one generative component at a time (Scenario A: $\tau_\beta$;
+B: $\tau_\alpha$; C: $\tau_\sigma$) and refits many datasets, so it is
+**compute-heavy**; a tiny `R` and short chains are used here for illustration.
+
+```{r simulation, results = "hide"}
+sim <- list(
+  beta  = simulate_replicability(res, synthetic_data, vary = "tau_beta",  k = 2, m = 1, R = 10, iter = 500),
+  alpha = simulate_replicability(res, synthetic_data, vary = "tau_alpha", k = 2, m = 1, R = 10, iter = 500),
+  sigma = simulate_replicability(res, synthetic_data, vary = "tau_sig",   k = 2, m = 1, R = 10, iter = 500)
+)
+```
+
+```{r simulation-table}
+show_tbl(sim$beta, caption = "Simulation, Scenario A (effect heterogeneity): metrics with MCSE")
+```
+
+```{r simulation-plot, fig.width = 8, fig.height = 7}
+lvlmap <- c(low = "Low heterogeneity", medium = "Medium heterogeneity",
+            high = "High heterogeneity")
+prep <- function(df, scenario) {
+  df <- df[df$metric %in% metrics_k2, c("level","metric","value","mcse")]
+  df$level <- lvlmap[as.character(df$level)]; df$scenario <- scenario; df
+}
+simdf <- rbind(prep(sim$beta,  "A: Effect heterogeneity"),
+               prep(sim$alpha, "B: Intercept heterogeneity"),
+               prep(sim$sigma, "C: Residual-scale heterogeneity"))
+simdf$level  <- factor(simdf$level,
+                       levels = c("Low heterogeneity","Medium heterogeneity","High heterogeneity"))
+simdf$metric <- factor(simdf$metric, levels = metrics_k2)
+
+ggplot(simdf, aes(metric, value, color = level, group = level)) +
+  geom_ribbon(aes(ymin = pmax(0, value - 2*mcse), ymax = pmin(1, value + 2*mcse), fill = level),
+              alpha = .15, color = NA) +
+  geom_line(linewidth = .7) + geom_point(size = 1.4) +
+  facet_wrap(~ scenario, ncol = 1) +
+  scale_color_manual(values = c("Low heterogeneity"="#9ECAE1",
+                                "Medium heterogeneity"="#4292C6",
+                                "High heterogeneity"="#084594")) +
+  scale_fill_manual(values = c("Low heterogeneity"="#9ECAE1",
+                               "Medium heterogeneity"="#4292C6",
+                               "High heterogeneity"="#084594"), guide = "none") +
+  scale_x_discrete(labels = function(x) parse(text = lab[x])) +
+  scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, .25)) +
+  labs(x = "", y = "probability", color = NULL) +
+  theme_bw(base_size = 11) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "top")
+```
+
+# The framework is general
+
+Everything works for any number of studies `S` (pass the effects as a list),
+any consensus level(s) `k` (a value or a vector), any conditional threshold `m`,
+and any body of evidence chosen by explicit study indices. For example:
+
+```{r general, eval = FALSE}
+## The metric functions take the study effects as a LIST, so any number of
+## studies works. Here: 5 studies, consensus level k = 3, m = 2.
+b <- lapply(1:5, function(i) rnorm(4000, 1, 0.4))          # posterior draws, 5 studies
+replication_ess(b, mu = rnorm(4000, 1, 0.4), eps = 0.2, k = 3, m = 2)
+
+## fit_replicability() takes a data frame (columns study, x, m), not a list of
+## draws, because it fits the models from the raw data.
+five_study_data <- do.call(rbind, lapply(1:5, function(s) {
+  x <- sample(0:2, 200, replace = TRUE)
+  data.frame(study = s, x = x, m = rnorm(200, 8 + 0.5 * x, 2))
+}))
+res_five_study <- fit_replicability(five_study_data, k = c(2, 3),
+                  retro_target = 5, retro_evidence = c(1, 2, 3, 4),
+                  pro_evidence = c(1, 2))
+```
+
+# Notes on the data
+
+The paper analyses controlled-access GTEx data, which cannot be redistributed;
+`synthetic_data` has the same structure so the pipeline runs, but its numbers are
+illustrative and will not match the paper exactly.
+
+# Session information
+
+```{r session}
+sessionInfo()
+```

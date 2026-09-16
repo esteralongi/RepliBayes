@@ -9,7 +9,7 @@
   ad     <- adapt_delta
   repeat {
     fit_k <- rstan::sampling(model, data = sd_k, iter = iter_k, warmup = iter_k / 2,
-                             chains = chains, seed = seed,
+                             chains = chains, seed = seed, refresh = 0,
                              control = list(adapt_delta = ad, max_treedepth = max_treedepth))
     s       <- rstan::summary(fit_k)$summary
     n_div   <- rstan::get_num_divergent(fit_k)

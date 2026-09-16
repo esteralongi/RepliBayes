@@ -129,7 +129,7 @@ simulate_replicability <- function(fit, data, priors = default_priors(), eps = N
       df   <- .simulate_dataset(N_s, geno, a_s, b_s, sig_s)
       sdat <- build_stan_data(df, priors, "hierarchical")
       fitr <- rstan::sampling(model, data = sdat, iter = iter, warmup = warmup,
-                              chains = chains, seed = seed + r,
+                              chains = chains, seed = seed + r, refresh = 0,
                               control = list(adapt_delta = adapt_delta,
                                              max_treedepth = max_treedepth))
       s   <- rstan::summary(fitr)$summary
