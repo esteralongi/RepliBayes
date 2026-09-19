@@ -80,7 +80,7 @@ and `pro_evidence` (size 1..S).
 | `sensitivity_prior()` | prior-sensitivity over a heterogeneity's prior |
 | `simulate_replicability()` | simulation calibration, varying the generative model |
 | `replication_ess()` | metrics with MCSE (hierarchical / independence) |
-| `held_mcse()`, `held_pro_mcse()` | retrospective / prospective metrics |
+| `predictive_retro()`, `predictive_pro()` | retrospective / prospective metrics |
 | `compute_replication_probs_hier()`, `compute_replication_probs_indep()` | point-estimate metrics (used in the simulation calibration) |
 | `replication_measures_multi()` | threshold-free summaries |
 

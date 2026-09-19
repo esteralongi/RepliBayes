@@ -12,3 +12,6 @@
 *.so
 src/*.o
 src/*.so
+
+# logs (e.g. OmnipathR)
+omnipathr-log/

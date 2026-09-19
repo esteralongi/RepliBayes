@@ -40,8 +40,10 @@
 #'   default), `"tau_alpha"` (intercept) or `"tau_sig"` (residual scale).
 #' @param percentiles Prior percentiles at which to place the median of the
 #'   shifted prior (0.5 reproduces the main analysis).
-#' @param k Consensus level(s) passed to [replication_ess()]. Default 2.
-#' @param m Minimum number of other studies agreeing, for the conditional
+#' @param consensus_level Consensus level(s) passed to [replication_ess()].
+#'   Default 2.
+#' @param min_corroborating Minimum number of other studies required to
+#'   corroborate the discovery of the reference study, for the conditional
 #'   metrics. Default 1.
 #' @param chains,iter_start,iter_max,seed,adapt_delta,max_treedepth Sampler and
 #'   adaptive-convergence settings.
@@ -67,7 +69,7 @@
 sensitivity_prior <- function(data, priors = default_priors(), eps = NULL,
                               target = c("tau_beta", "tau_alpha", "tau_sig"),
                               percentiles = c(0.10, 0.25, 0.50, 0.75, 0.90),
-                              k = 2, m = 1,
+                              consensus_level = 2, min_corroborating = 1,
                               chains = 4, iter_start = 3000, iter_max = 24000,
                               seed = 42, adapt_delta = 0.99, max_treedepth = 15,
                               verbose = TRUE) {
@@ -96,7 +98,7 @@ sensitivity_prior <- function(data, priors = default_priors(), eps = NULL,
   grid <- data.frame(pctl = percentiles, mult = mults,
                      mu = mults * tf$mu, scale = mults * tf$scale)
   grid$prior_med <- vapply(seq_len(nrow(grid)),
-                           function(k) qt_trunc_scaled_vec(0.5, nu, grid$mu[k], grid$scale[k]),
+                           function(ii) qt_trunc_scaled_vec(0.5, nu, grid$mu[ii], grid$scale[ii]),
                            numeric(1))
 
   sd0   <- build_stan_data(data, priors, "hierarchical")
@@ -116,7 +118,8 @@ sensitivity_prior <- function(data, priors = default_priors(), eps = NULL,
                                 adapt_delta = adapt_delta, max_treedepth = max_treedepth)
     arr   <- rstan::extract(res$fit, pars = c("beta", "mu_beta", tf$post), permuted = FALSE)
     a_lst <- lapply(seq_len(S), function(s) arr[, , sprintf("beta[%d]", s)])
-    re  <- replication_ess(a_lst, mu = arr[, , "mu_beta"], eps = eps, k = k, m = m)
+    re  <- replication_ess(a_lst, generative_beta = arr[, , "mu_beta"], eps = eps,
+                           consensus_level = consensus_level, min_corroborating = min_corroborating)
     re$pctl      <- grid$pctl[gi]
     re$mult      <- grid$mult[gi]
     re$prior_med <- grid$prior_med[gi]

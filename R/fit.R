@@ -93,9 +93,11 @@ predict_new_study <- function(fit, nu = 3, seed = NULL) {
 #' @param eps Practical-relevance threshold on the scale of the effects. If
 #'   `NULL` (default) it is set to 10\% of the baseline (predictor = 0) mean
 #'   outcome.
-#' @param k Consensus level(s) passed to [replication_ess()]: at least `k` of the
-#'   `S` studies agree. A vector is allowed. Default 2.
-#' @param m Minimum number of *other* studies agreeing, for the per-study
+#' @param consensus_level Consensus level(s) passed to [replication_ess()]: at
+#'   least `consensus_level` of the `S` studies agree. A vector is allowed.
+#'   Default 2.
+#' @param min_corroborating Minimum number of *other* studies required to
+#'   corroborate the discovery of the reference study, for the per-study
 #'   conditional metrics. Default 1.
 #' @param retrospective If `TRUE`, also run the retrospective analysis: predict a
 #'   target study from a body of evidence.
@@ -117,7 +119,7 @@ predict_new_study <- function(fit, nu = 3, seed = NULL) {
 #'   the `priors`, the fitted models, and the metric tables
 #'   `metrics_hierarchical`, `metrics_independence`, `metrics_prospective` and
 #'   `metrics_retrospective` (each a tibble from [replication_ess()],
-#'   [held_pro_mcse()] or [held_mcse()]).
+#'   [predictive_pro()] or [predictive_retro()]).
 #'
 #' @examples
 #' \dontrun{
@@ -128,7 +130,7 @@ predict_new_study <- function(fit, nu = 3, seed = NULL) {
 #' }
 #' @export
 fit_replicability <- function(data, priors = default_priors(), eps = NULL,
-                              k = 2, m = 1,
+                              consensus_level = 2, min_corroborating = 1,
                               retrospective = TRUE, prospective = TRUE,
                               retro_target = NULL, retro_evidence = NULL,
                               pro_evidence = NULL,
@@ -164,8 +166,10 @@ fit_replicability <- function(data, priors = default_priors(), eps = NULL,
   ## --- empirical metrics (keep chain structure for the ESS) -----------------
   say("Computing replication probabilities ...")
   mu_h        <- rstan::extract(fit_h, pars = "mu_beta", permuted = FALSE)[, , "mu_beta"]
-  report_hier  <- replication_ess(a_list_from_fit(fit_h, S), mu = mu_h, eps = eps, k = k, m = m)
-  report_indep <- replication_ess(a_list_from_fit(fit_i, S), mu = NULL,  eps = eps, k = k, m = m)
+  report_hier  <- replication_ess(a_list_from_fit(fit_h, S), generative_beta = mu_h, eps = eps,
+                                  consensus_level = consensus_level, min_corroborating = min_corroborating)
+  report_indep <- replication_ess(a_list_from_fit(fit_i, S), generative_beta = NULL, eps = eps,
+                                  consensus_level = consensus_level, min_corroborating = min_corroborating)
 
   ## --- prospective: a new study drawn from a body of evidence ---------------
   report_pro <- NULL; pro_ev <- NULL
@@ -175,7 +179,7 @@ fit_replicability <- function(data, priors = default_priors(), eps = NULL,
     fit_pro <- if (setequal(pro_ev, studies)) fit_h else
       fit_h_fun(data[data$study %in% pro_ev, , drop = FALSE])
     a_pro_ic <- .predict_new_study_ic(fit_pro, nu = priors$nu, seed = seed + 1L)
-    report_pro <- held_pro_mcse(a_pro_ic, eps)
+    report_pro <- predictive_pro(a_pro_ic, eps)
   }
 
   ## --- retrospective: predict a target study from a body of evidence --------
@@ -190,16 +194,16 @@ fit_replicability <- function(data, priors = default_priors(), eps = NULL,
     fit_obs <- fit_i_fun(data[data$study == rt, , drop = FALSE])
     a_hat_ic <- .predict_new_study_ic(fit_ev, nu = priors$nu, seed = seed)
     a_obs_ic <- rstan::extract(fit_obs, pars = "beta", permuted = FALSE)[, , "beta[1]"]
-    report_held <- held_mcse(a_obs_ic, a_hat_ic, eps)
+    report_held <- predictive_retro(a_obs_ic, a_hat_ic, eps)
   }
 
   structure(list(
     eps       = eps,
     priors    = priors,
     studies   = studies,
-    S         = S,
-    k         = k,
-    m         = m,
+    S                 = S,
+    consensus_level   = consensus_level,
+    min_corroborating = min_corroborating,
     retro_target   = rt,
     retro_evidence = re_ev,
     pro_evidence   = pro_ev,
@@ -218,9 +222,9 @@ fit_replicability <- function(data, priors = default_priors(), eps = NULL,
 print.RepliBayes <- function(x, ...) {
   cat("<RepliBayes>\n")
   cat(sprintf("  studies: %s  (S = %d)\n", paste(x$studies, collapse = ", "), x$S))
-  cat(sprintf("  eps    : %.4g   k = %s   m = %d\n", x$eps,
-              paste(x$k, collapse = ","), as.integer(x$m)))
-  k1  <- as.integer(x$k)[1]
+  cat(sprintf("  eps    : %.4g   consensus_level = %s   min_corroborating = %d\n", x$eps,
+              paste(x$consensus_level, collapse = ","), as.integer(x$min_corroborating)))
+  k1  <- as.integer(x$consensus_level)[1]
   key <- c(sprintf("P_overall_%d", k1), sprintf("P_non_null_%d", k1),
            "P_beta", sprintf("P_gen_overall_%d", k1))
   mm <- x$metrics_hierarchical

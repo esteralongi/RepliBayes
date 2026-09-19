@@ -51,15 +51,17 @@
 #'   the study-specific effects. Plain vectors are also accepted (treated as a
 #'   single chain). Extract with `rstan::extract(fit, permuted = FALSE)` to keep
 #'   the chain structure so the ESS reflects the MCMC autocorrelation.
-#' @param mu Optional matrix of posterior draws of the generative effect
-#'   (`mu_beta`). If `NULL` (default) only the study-level metrics are returned
-#'   (independence limit); if supplied, the generative-consistency metrics are
-#'   added (hierarchical model).
+#' @param generative_beta Optional matrix of posterior draws of the generative
+#'   effect (`mu_beta`). If `NULL` (default) only the study-level metrics are
+#'   returned (independence limit); if supplied, the generative-consistency
+#'   metrics are added (hierarchical model).
 #' @param eps Practical-relevance threshold on the scale of the effects.
-#' @param k Consensus level(s): at least `k` of the `S` studies agree. A vector
-#'   is allowed (one block of metrics per value). Default 2.
-#' @param m For the per-study conditional metrics, the minimum number of *other*
-#'   studies that must agree in direction. Default 1.
+#' @param consensus_level Consensus level(s): at least `consensus_level` of the
+#'   `S` studies agree. A vector is allowed (one block of metrics per value).
+#'   Default 2.
+#' @param min_corroborating For the per-study conditional metrics, the minimum
+#'   number of *other* studies required to corroborate the discovery of the
+#'   reference study. Default 1.
 #'
 #' @return A [tibble][tibble::tibble] with one row per metric and columns
 #'   `metric`, `p`, `k`, `n`, `ess`, `mcse`. (Here the `k` column is the count of
@@ -70,8 +72,9 @@
 #'   bound `< 3/n`; conditional metrics with fewer than 30 conditioning draws
 #'   should be flagged as unreliable when reported.
 #' @export
-replication_ess <- function(beta, mu = NULL, eps, k = 2, m = 1) {
-  E <- .metric_entries(beta, mu = mu, eps = eps, k = k, m = m)
+replication_ess <- function(beta, generative_beta = NULL, eps, consensus_level = 2, min_corroborating = 1) {
+  E <- .metric_entries(beta, generative_beta = generative_beta, eps = eps,
+                       consensus_level = consensus_level, min_corroborating = min_corroborating)
   rows <- lapply(E, function(e) {
     if (e$type == "uncond") .row_uncond(e$name, e$ind)
     else                    .row_cond(e$name, e$num, e$den)
@@ -79,50 +82,50 @@ replication_ess <- function(beta, mu = NULL, eps, k = 2, m = 1) {
   do.call(rbind, rows)
 }
 
-#' Retrospective replication probabilities against a left-out study
+#' Retrospective predictive replication probabilities against a left-out study
 #'
 #' Paired-indicator replication probabilities that compare the observed effect
 #' of a left-out study with its predicted effect from a body of evidence, each
 #' with a Monte Carlo standard error. This function is agnostic to how many
 #' studies formed the body of evidence (that choice is made upstream when
-#' `a_hat_ic` is produced; see [fit_replicability()]).
+#' `beta_pred` is produced; see [fit_replicability()]).
 #'
-#' @param a_obs_ic Matrix \[iterations x chains\] of posterior draws of the
+#' @param beta_obs Matrix \[iterations x chains\] of posterior draws of the
 #'   left-out study's effect, fit on that study alone.
-#' @param a_hat_ic Matrix \[iterations x chains\] of predicted effects for the
+#' @param beta_pred Matrix \[iterations x chains\] of predicted effects for the
 #'   left-out study, drawn from the model fit on the body of evidence. Paired
-#'   draw-by-draw with `a_obs_ic`.
+#'   draw-by-draw with `beta_obs`.
 #' @param eps Practical-relevance threshold on the scale of the effects.
 #'
 #' @return A [tibble][tibble::tibble] with columns `metric`, `p`, `k`, `n`,
 #'   `ess`, `mcse` for the retrospective metrics (`P_overall_l`, `P_null_l`,
 #'   `P_non_null_l`, `P_pos_l`, `P_neg_l`).
 #'
-#' @details `a_obs` and `a_hat` come from disjoint data, so the paired indicator
-#'   is a valid estimator. Extract both with `permuted = FALSE` (and a fixed
-#'   seed for `a_hat`) so the pairing is reproducible.
+#' @details `beta_obs` and `beta_pred` come from disjoint data, so the paired
+#'   indicator is a valid estimator. Extract both with `permuted = FALSE` (and a
+#'   fixed seed for `beta_pred`) so the pairing is reproducible.
 #' @export
-held_mcse <- function(a_obs_ic, a_hat_ic, eps) {
-  a_obs <- as.matrix(a_obs_ic); a_hat <- as.matrix(a_hat_ic)
-  Mo <- abs(a_obs) > eps; Mr <- abs(a_hat) > eps
+predictive_retro <- function(beta_obs, beta_pred, eps) {
+  beta_obs <- as.matrix(beta_obs); beta_pred <- as.matrix(beta_pred)
+  Mo <- abs(beta_obs) > eps; Mr <- abs(beta_pred) > eps
   ind <- list(
-    P_overall_l  = (!Mo & !Mr) | (a_obs >  eps & a_hat >  eps) | (a_obs < -eps & a_hat < -eps),
+    P_overall_l  = (!Mo & !Mr) | (beta_obs >  eps & beta_pred >  eps) | (beta_obs < -eps & beta_pred < -eps),
     P_null_l     = (!Mo & !Mr),
-    P_non_null_l = (a_obs >  eps & a_hat >  eps) | (a_obs < -eps & a_hat < -eps),
-    P_pos_l      = (a_obs >  eps & a_hat >  eps),
-    P_neg_l      = (a_obs < -eps & a_hat < -eps)
+    P_non_null_l = (beta_obs >  eps & beta_pred >  eps) | (beta_obs < -eps & beta_pred < -eps),
+    P_pos_l      = (beta_obs >  eps & beta_pred >  eps),
+    P_neg_l      = (beta_obs < -eps & beta_pred < -eps)
   )
   do.call(rbind, Map(.row_uncond, names(ind), ind))
 }
 
-#' Prospective replication probabilities for a new study
+#' Prospective predictive replication probabilities for a new study
 #'
 #' Marginal replication probabilities of a single future study-specific effect
 #' drawn from a fitted hierarchical model, each with a Monte Carlo standard
 #' error. The number of studies in the body of evidence used to fit that model
 #' is chosen upstream (see [fit_replicability()]).
 #'
-#' @param a_new_ic Matrix \[iterations x chains\] of posterior-predictive draws
+#' @param beta_new Matrix \[iterations x chains\] of posterior-predictive draws
 #'   of a new study's effect.
 #' @param eps Practical-relevance threshold on the scale of the effects.
 #'
@@ -130,13 +133,13 @@ held_mcse <- function(a_obs_ic, a_hat_ic, eps) {
 #'   `ess`, `mcse` for the prospective metrics (`P_non_null_p`, `P_null_p`,
 #'   `P_pos_p`, `P_neg_p`).
 #' @export
-held_pro_mcse <- function(a_new_ic, eps) {
-  a_new <- as.matrix(a_new_ic)
+predictive_pro <- function(beta_new, eps) {
+  beta_new <- as.matrix(beta_new)
   ind <- list(
-    P_non_null_p = abs(a_new) >  eps,
-    P_null_p     = abs(a_new) <= eps,
-    P_pos_p      = a_new >  eps,
-    P_neg_p      = a_new < -eps
+    P_non_null_p = abs(beta_new) >  eps,
+    P_null_p     = abs(beta_new) <= eps,
+    P_pos_p      = beta_new >  eps,
+    P_neg_p      = beta_new < -eps
   )
   do.call(rbind, Map(.row_uncond, names(ind), ind))
 }

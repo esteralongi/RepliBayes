@@ -8,8 +8,8 @@ fit_replicability(
   data,
   priors = default_priors(),
   eps = NULL,
-  k = 2,
-  m = 1,
+  consensus_level = 2,
+  min_corroborating = 1,
   retrospective = TRUE,
   prospective = TRUE,
   retro_target = NULL,
@@ -34,10 +34,12 @@ fit_replicability(
 \code{NULL} (default) it is set to 10\\% of the baseline (predictor = 0) mean
 outcome.}
 
-\item{k}{Consensus level(s) passed to \code{\link[=replication_ess]{replication_ess()}}: at least \code{k} of the
-\code{S} studies agree. A vector is allowed. Default 2.}
+\item{consensus_level}{Consensus level(s) passed to \code{\link[=replication_ess]{replication_ess()}}: at
+least \code{consensus_level} of the \code{S} studies agree. A vector is allowed.
+Default 2.}
 
-\item{m}{Minimum number of \emph{other} studies agreeing, for the per-study
+\item{min_corroborating}{Minimum number of \emph{other} studies required to
+corroborate the discovery of the reference study, for the per-study
 conditional metrics. Default 1.}
 
 \item{retrospective}{If \code{TRUE}, also run the retrospective analysis: predict a
@@ -68,7 +70,7 @@ An object of class \code{"RepliBayes"}: a list with the threshold \code{eps},
 the \code{priors}, the fitted models, and the metric tables
 \code{metrics_hierarchical}, \code{metrics_independence}, \code{metrics_prospective} and
 \code{metrics_retrospective} (each a tibble from \code{\link[=replication_ess]{replication_ess()}},
-\code{\link[=held_pro_mcse]{held_pro_mcse()}} or \code{\link[=held_mcse]{held_mcse()}}).
+\code{\link[=predictive_pro]{predictive_pro()}} or \code{\link[=predictive_retro]{predictive_retro()}}).
 }
 \description{
 Fits the hierarchical and independence-limit models and returns all

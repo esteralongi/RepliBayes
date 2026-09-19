@@ -4,21 +4,27 @@
 \alias{compute_replication_probs_hier}
 \title{Full replication probabilities (hierarchical model)}
 \usage{
-compute_replication_probs_hier(beta, mu, eps, k = 2, m = 1)
+compute_replication_probs_hier(
+  beta,
+  generative_beta,
+  eps,
+  consensus_level = 2,
+  min_corroborating = 1
+)
 }
 \arguments{
 \item{beta}{A list of \code{S} posterior-draw matrices [iterations x chains] (or
 vectors) of the study-specific effects.}
 
-\item{mu}{Posterior draws of the generative effect (\code{mu_beta}), paired
-draw-by-draw with the study effects in \code{beta}.}
+\item{generative_beta}{Posterior draws of the generative effect (\code{mu_beta}),
+paired draw-by-draw with the study effects in \code{beta}.}
 
 \item{eps}{Practical-relevance threshold on the scale of the effects.}
 
-\item{k}{Consensus level(s): at least \code{k} of the \code{S} studies agree. A vector
+\item{consensus_level}{Consensus level(s): at least \code{consensus_level} of the \code{S} studies agree. A vector
 is allowed (one block of metrics per value). Default 2.}
 
-\item{m}{For the per-study conditional metrics, the minimum number of \emph{other}
+\item{min_corroborating}{For the per-study conditional metrics, the minimum number of \emph{other}
 studies that must agree in direction. Default 1.}
 }
 \value{
@@ -28,5 +34,6 @@ metrics are \code{P_beta}, \verb{P_gen_*_k}, \code{P_c_pos_k}, etc.
 \description{
 Point estimates of all replication probabilities: the study-level metrics of
 \code{\link[=compute_replication_probs_indep]{compute_replication_probs_indep()}} plus the generative-consistency metrics
-that compare the study-specific effects with the generative effect \code{mu}.
+that compare the study-specific effects with the generative effect
+\code{generative_beta}.
 }

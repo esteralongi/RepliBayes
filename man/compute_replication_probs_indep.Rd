@@ -4,7 +4,12 @@
 \alias{compute_replication_probs_indep}
 \title{Study-level replication probabilities (independence limit)}
 \usage{
-compute_replication_probs_indep(beta, eps, k = 2, m = 1)
+compute_replication_probs_indep(
+  beta,
+  eps,
+  consensus_level = 2,
+  min_corroborating = 1
+)
 }
 \arguments{
 \item{beta}{A list of \code{S} posterior-draw matrices [iterations x chains] (or
@@ -12,10 +17,10 @@ vectors) of the study-specific effects.}
 
 \item{eps}{Practical-relevance threshold on the scale of the effects.}
 
-\item{k}{Consensus level(s): at least \code{k} of the \code{S} studies agree. A vector
+\item{consensus_level}{Consensus level(s): at least \code{consensus_level} of the \code{S} studies agree. A vector
 is allowed (one block of metrics per value). Default 2.}
 
-\item{m}{For the per-study conditional metrics, the minimum number of \emph{other}
+\item{min_corroborating}{For the per-study conditional metrics, the minimum number of \emph{other}
 studies that must agree in direction. Default 1.}
 }
 \value{

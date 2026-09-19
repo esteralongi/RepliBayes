@@ -4,7 +4,13 @@
 \alias{replication_ess}
 \title{Replication probabilities with Monte Carlo standard errors}
 \usage{
-replication_ess(beta, mu = NULL, eps, k = 2, m = 1)
+replication_ess(
+  beta,
+  generative_beta = NULL,
+  eps,
+  consensus_level = 2,
+  min_corroborating = 1
+)
 }
 \arguments{
 \item{beta}{A list of \code{S} posterior-draw matrices [iterations x chains] of
@@ -12,18 +18,20 @@ the study-specific effects. Plain vectors are also accepted (treated as a
 single chain). Extract with \code{rstan::extract(fit, permuted = FALSE)} to keep
 the chain structure so the ESS reflects the MCMC autocorrelation.}
 
-\item{mu}{Optional matrix of posterior draws of the generative effect
-(\code{mu_beta}). If \code{NULL} (default) only the study-level metrics are returned
-(independence limit); if supplied, the generative-consistency metrics are
-added (hierarchical model).}
+\item{generative_beta}{Optional matrix of posterior draws of the generative
+effect (\code{mu_beta}). If \code{NULL} (default) only the study-level metrics are
+returned (independence limit); if supplied, the generative-consistency
+metrics are added (hierarchical model).}
 
 \item{eps}{Practical-relevance threshold on the scale of the effects.}
 
-\item{k}{Consensus level(s): at least \code{k} of the \code{S} studies agree. A vector
-is allowed (one block of metrics per value). Default 2.}
+\item{consensus_level}{Consensus level(s): at least \code{consensus_level} of the
+\code{S} studies agree. A vector is allowed (one block of metrics per value).
+Default 2.}
 
-\item{m}{For the per-study conditional metrics, the minimum number of \emph{other}
-studies that must agree in direction. Default 1.}
+\item{min_corroborating}{For the per-study conditional metrics, the minimum
+number of \emph{other} studies required to corroborate the discovery of the
+reference study. Default 1.}
 }
 \value{
 A \link[tibble:tibble]{tibble} with one row per metric and columns

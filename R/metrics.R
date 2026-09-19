@@ -1,7 +1,7 @@
 ## metrics.R -- indicator definitions and point-estimate replication metrics.
 ##
 ## Everything is defined for a general number of studies S and a general
-## consensus level k (at least k of the S studies agree). A study-specific
+## consensus level (at least `consensus_level` of the S studies agree). A study-specific
 ## effect is, relative to the threshold eps:
 ##   positive if a_s > eps, negative if a_s < -eps, null if |a_s| <= eps.
 ##
@@ -9,7 +9,7 @@
 ## replication_ess() (metrics_mcse.R) adds Monte Carlo standard errors to the
 ## same entries, and compute_replication_probs_*() below return the point
 ## estimates. Metric names carry the consensus level as a suffix, so S = 3,
-## k = 2 reproduces the paper names (P_overall_2, P_cond_O1_m1, P_gen_pos_2,
+## consensus_level = 2 reproduces the paper names (P_overall_2, P_cond_O1_m1, P_gen_pos_2,
 ## P_c_pos_2, ...).
 
 ## Conditional probability P(A | B) from 0/1 indicators (A already A n B).
@@ -24,15 +24,15 @@
 ##   list(name, type = "cond",   num, den)        -- a conditional P(num | den).
 ##
 ## a   : list of S draw matrices [iterations x chains] (or vectors).
-## mu  : optional draws of the generative effect (adds the generative metrics).
+## generative_beta : optional draws of the generative effect (adds the generative metrics).
 ## eps : practical-relevance threshold.
-## k   : consensus level(s); one entry block per value.
-## m   : minimum number of OTHER studies agreeing, for the conditional metrics.
-.metric_entries <- function(beta, mu = NULL, eps, k = 2, m = 1) {
+## consensus_level   : consensus level(s); one entry block per value.
+## min_corroborating   : minimum number of OTHER studies agreeing, for the conditional metrics.
+.metric_entries <- function(beta, generative_beta = NULL, eps, consensus_level = 2, min_corroborating = 1) {
   beta <- lapply(beta, as.matrix)
   S <- length(beta)
-  k <- as.integer(k)
-  m <- as.integer(m)
+  consensus_level <- as.integer(consensus_level)
+  min_corroborating <- as.integer(min_corroborating)
 
   posI <- lapply(beta, function(x) x >  eps)
   negI <- lapply(beta, function(x) x < -eps)
@@ -45,8 +45,8 @@
   addu <- function(nm, ind)       E[[length(E) + 1L]] <<- list(name = nm, type = "uncond", ind = ind)
   addc <- function(nm, num, den)  E[[length(E) + 1L]] <<- list(name = nm, type = "cond", num = num, den = den)
 
-  ## study-level agreement, one block per consensus level k
-  for (kk in k) {
+  ## study-level agreement, one block per consensus_level value
+  for (kk in consensus_level) {
     addu(sprintf("P_overall_%d", kk),  (nul >= kk) | (pos >= kk) | (neg >= kk))
     addu(sprintf("P_non_null_%d", kk), (pos >= kk) | (neg >= kk))
     addu(sprintf("P_pos_%d", kk),      pos >= kk)
@@ -55,21 +55,21 @@
   }
 
   ## per-study conditional: given study i detects, does it agree in direction
-  ## with at least m other studies?
+  ## with at least min_corroborating other studies?
   for (i in seq_len(S)) {
     others_pos <- pos - posI[[i]]
     others_neg <- neg - negI[[i]]
     Mi <- posI[[i]] | negI[[i]]
-    ev <- (posI[[i]] & (others_pos >= m)) | (negI[[i]] & (others_neg >= m))
-    addc(sprintf("P_cond_O%d_m%d", i, m), ev, Mi)
+    ev <- (posI[[i]] & (others_pos >= min_corroborating)) | (negI[[i]] & (others_neg >= min_corroborating))
+    addc(sprintf("P_cond_O%d_m%d", i, min_corroborating), ev, Mi)
   }
 
   ## generative-consistency metrics (require the generative effect mu)
-  if (!is.null(mu)) {
-    mu <- as.matrix(mu)
-    mp <- mu >  eps; mn <- mu < -eps; m0 <- abs(mu) <= eps
-    addu("P_beta", abs(mu) > eps)
-    for (kk in k) {
+  if (!is.null(generative_beta)) {
+    generative_beta <- as.matrix(generative_beta)
+    mp <- generative_beta >  eps; mn <- generative_beta < -eps; m0 <- abs(generative_beta) <= eps
+    addu("P_beta", abs(generative_beta) > eps)
+    for (kk in consensus_level) {
       addu(sprintf("P_gen_overall_%d", kk),  (pos >= kk & mp) | (neg >= kk & mn) | (nul >= kk & m0))
       addu(sprintf("P_gen_non_null_%d", kk), (pos >= kk & mp) | (neg >= kk & mn))
       addu(sprintf("P_gen_pos_%d", kk),      (pos >= kk) & mp)
@@ -100,9 +100,9 @@
 #' @param beta A list of `S` posterior-draw matrices \[iterations x chains\] (or
 #'   vectors) of the study-specific effects.
 #' @param eps Practical-relevance threshold on the scale of the effects.
-#' @param k Consensus level(s): at least `k` of the `S` studies agree. A vector
+#' @param consensus_level Consensus level(s): at least `consensus_level` of the `S` studies agree. A vector
 #'   is allowed (one block of metrics per value). Default 2.
-#' @param m For the per-study conditional metrics, the minimum number of *other*
+#' @param min_corroborating For the per-study conditional metrics, the minimum number of *other*
 #'   studies that must agree in direction. Default 1.
 #'
 #' @return A named list of probabilities, with paper-style names carrying the
@@ -112,23 +112,24 @@
 #' @seealso [replication_ess()] for the same metrics with Monte Carlo standard
 #'   errors.
 #' @export
-compute_replication_probs_indep <- function(beta, eps, k = 2, m = 1) {
-  .entries_points(.metric_entries(beta, mu = NULL, eps = eps, k = k, m = m))
+compute_replication_probs_indep <- function(beta, eps, consensus_level = 2, min_corroborating = 1) {
+  .entries_points(.metric_entries(beta, generative_beta = NULL, eps = eps, consensus_level = consensus_level, min_corroborating = min_corroborating))
 }
 
 #' Full replication probabilities (hierarchical model)
 #'
 #' Point estimates of all replication probabilities: the study-level metrics of
 #' [compute_replication_probs_indep()] plus the generative-consistency metrics
-#' that compare the study-specific effects with the generative effect `mu`.
+#' that compare the study-specific effects with the generative effect
+#' `generative_beta`.
 #'
 #' @inheritParams compute_replication_probs_indep
-#' @param mu Posterior draws of the generative effect (`mu_beta`), paired
-#'   draw-by-draw with the study effects in `beta`.
+#' @param generative_beta Posterior draws of the generative effect (`mu_beta`),
+#'   paired draw-by-draw with the study effects in `beta`.
 #'
 #' @return A named list of probabilities (paper-style names). The generative
 #'   metrics are `P_beta`, `P_gen_*_k`, `P_c_pos_k`, etc.
 #' @export
-compute_replication_probs_hier <- function(beta, mu, eps, k = 2, m = 1) {
-  .entries_points(.metric_entries(beta, mu = mu, eps = eps, k = k, m = m))
+compute_replication_probs_hier <- function(beta, generative_beta, eps, consensus_level = 2, min_corroborating = 1) {
+  .entries_points(.metric_entries(beta, generative_beta = generative_beta, eps = eps, consensus_level = consensus_level, min_corroborating = min_corroborating))
 }

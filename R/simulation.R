@@ -43,8 +43,9 @@
 #'   `"tau_sig"` (residual-scale heterogeneity).
 #' @param levels A named numeric vector of prior percentiles defining the
 #'   scenarios (default low/medium/high = 0.10/0.50/0.90).
-#' @param k Consensus level(s) for the metrics. Default 2.
-#' @param m Minimum number of other studies agreeing, for the conditional
+#' @param consensus_level Consensus level(s) for the metrics. Default 2.
+#' @param min_corroborating Minimum number of other studies required to
+#'   corroborate the discovery of the reference study, for the conditional
 #'   metrics. Default 1.
 #' @param R Number of simulated datasets per level.
 #' @param seed Base seed; replicate `r` uses `seed + r`.
@@ -72,7 +73,7 @@
 simulate_replicability <- function(fit, data, priors = default_priors(), eps = NULL,
                                    vary = c("tau_beta", "tau_alpha", "tau_sig"),
                                    levels = c(low = 0.10, medium = 0.50, high = 0.90),
-                                   k = 2, m = 1,
+                                   consensus_level = 2, min_corroborating = 1,
                                    R = 30, seed = 1000,
                                    chains = 4, iter = 3000, warmup = floor(iter / 2),
                                    adapt_delta = 0.99, max_treedepth = 15,
@@ -138,7 +139,9 @@ simulate_replicability <- function(fit, data, priors = default_priors(), eps = N
              min(s[, "n_eff"], na.rm = TRUE) > 100
       dr    <- rstan::extract(fitr)
       a_lst <- lapply(seq_len(S), function(s) dr$beta[, s])
-      pr    <- compute_replication_probs_hier(a_lst, dr$mu_beta, eps, k = k, m = m)
+      pr    <- compute_replication_probs_hier(a_lst, dr$mu_beta, eps,
+                                              consensus_level = consensus_level,
+                                              min_corroborating = min_corroborating)
       if (is.null(metric_names)) metric_names <- names(pr)
       metrics_list[[r]] <- as.numeric(pr); diag_ok[r] <- ok
       rm(fitr, dr)

@@ -24,8 +24,8 @@ test_that("replication_ess returns the right shape and finite MCSEs", {
              matrix(rnorm(1000 * 4, 1, 0.3), 1000, 4))
   mu <- matrix(rnorm(1000 * 4, 1, 0.3), 1000, 4)
 
-  tab_i <- replication_ess(a, mu = NULL, eps = 0.2)
-  tab_h <- replication_ess(a, mu = mu,   eps = 0.2)
+  tab_i <- replication_ess(a, generative_beta = NULL, eps = 0.2)
+  tab_h <- replication_ess(a, generative_beta = mu,   eps = 0.2)
 
   expect_setequal(names(tab_i), c("metric", "p", "k", "n", "ess", "mcse"))
   expect_true(all(c("P_overall_2", "P_pos_2", "P_cond_O1_m1") %in% tab_i$metric))
@@ -42,7 +42,7 @@ test_that("point and MCSE versions give identical point estimates", {
   mu <- rnorm(5000, 0.5, 0.6); eps <- 0.3
 
   pt <- compute_replication_probs_hier(a, mu, eps)
-  es <- replication_ess(a, mu = mu, eps = eps)
+  es <- replication_ess(a, generative_beta = mu, eps = eps)
   get <- function(tab, nm) tab$p[tab$metric == nm]
 
   for (nm in c("P_overall_2", "P_pos_2", "P_beta", "P_gen_pos_2", "P_cond_O1_m1"))
@@ -55,14 +55,14 @@ test_that("generalizes to any S, k, and m", {
   a <- lapply(seq_len(S), function(i) rnorm(1500, 1, 0.4))
   mu <- rnorm(1500, 1, 0.4)
 
-  ## consensus level k = 3, conditional m = 2, with S = 5 studies
-  es <- replication_ess(a, mu = mu, eps = 0.2, k = 3, m = 2)
+  ## consensus level consensus_level = 3, conditional min_corroborating = 2, with S = 5 studies
+  es <- replication_ess(a, generative_beta = mu, eps = 0.2, consensus_level = 3, min_corroborating = 2)
   expect_true(all(c("P_overall_3", "P_pos_3", "P_gen_pos_3", "P_c_pos_3") %in% es$metric))
   expect_true(all(sprintf("P_cond_O%d_m2", 1:S) %in% es$metric))   # one per study
   expect_false(any(grepl("_2$", es$metric)))                       # k=2 not requested
 
   ## a vector of consensus levels produces one block each
-  es2 <- replication_ess(a, mu = NULL, eps = 0.2, k = c(2, 4))
+  es2 <- replication_ess(a, generative_beta = NULL, eps = 0.2, consensus_level = c(2, 4))
   expect_true(all(c("P_overall_2", "P_overall_4") %in% es2$metric))
 })
 

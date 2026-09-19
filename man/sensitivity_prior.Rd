@@ -10,8 +10,8 @@ sensitivity_prior(
   eps = NULL,
   target = c("tau_beta", "tau_alpha", "tau_sig"),
   percentiles = c(0.1, 0.25, 0.5, 0.75, 0.9),
-  k = 2,
-  m = 1,
+  consensus_level = 2,
+  min_corroborating = 1,
   chains = 4,
   iter_start = 3000,
   iter_max = 24000,
@@ -35,9 +35,11 @@ default), \code{"tau_alpha"} (intercept) or \code{"tau_sig"} (residual scale).}
 \item{percentiles}{Prior percentiles at which to place the median of the
 shifted prior (0.5 reproduces the main analysis).}
 
-\item{k}{Consensus level(s) passed to \code{\link[=replication_ess]{replication_ess()}}. Default 2.}
+\item{consensus_level}{Consensus level(s) passed to \code{\link[=replication_ess]{replication_ess()}}.
+Default 2.}
 
-\item{m}{Minimum number of other studies agreeing, for the conditional
+\item{min_corroborating}{Minimum number of other studies required to
+corroborate the discovery of the reference study, for the conditional
 metrics. Default 1.}
 
 \item{chains, iter_start, iter_max, seed, adapt_delta, max_treedepth}{Sampler and

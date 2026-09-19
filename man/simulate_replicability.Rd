@@ -11,8 +11,8 @@ simulate_replicability(
   eps = NULL,
   vary = c("tau_beta", "tau_alpha", "tau_sig"),
   levels = c(low = 0.1, medium = 0.5, high = 0.9),
-  k = 2,
-  m = 1,
+  consensus_level = 2,
+  min_corroborating = 1,
   R = 30,
   seed = 1000,
   chains = 4,
@@ -44,9 +44,10 @@ object or computed as 10\\% of the baseline mean outcome.}
 \item{levels}{A named numeric vector of prior percentiles defining the
 scenarios (default low/medium/high = 0.10/0.50/0.90).}
 
-\item{k}{Consensus level(s) for the metrics. Default 2.}
+\item{consensus_level}{Consensus level(s) for the metrics. Default 2.}
 
-\item{m}{Minimum number of other studies agreeing, for the conditional
+\item{min_corroborating}{Minimum number of other studies required to
+corroborate the discovery of the reference study, for the conditional
 metrics. Default 1.}
 
 \item{R}{Number of simulated datasets per level.}
