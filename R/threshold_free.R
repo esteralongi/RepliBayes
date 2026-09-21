@@ -24,10 +24,10 @@
 #' @examples
 #' \dontrun{
 #' post <- rstan::extract(fit_hier)
-#' replication_measures_multi(list(post$beta[, 1], post$beta[, 2], post$beta[, 3]))
+#' replication_threshold_free(list(post$beta[, 1], post$beta[, 2], post$beta[, 3]))
 #' }
 #' @export
-replication_measures_multi <- function(beta, dens_n = 500) {
+replication_threshold_free <- function(beta, dens_n = 500) {
   stopifnot(is.list(beta), length(beta) >= 2L)
 
   ## draws in a matrix: rows = MCMC draws, columns = the S studies
