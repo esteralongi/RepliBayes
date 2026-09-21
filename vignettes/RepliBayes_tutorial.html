@@ -1153,13 +1153,13 @@ down if they lower it. We recompute the metrics on prior draws with
 </div>
 <div id="threshold-free-summaries" class="section level1">
 <h1>Threshold-free summaries</h1>
-<p><code>replication_measures_multi()</code> needs no threshold: it
+<p><code>replication_threshold_free()</code> needs no threshold: it
 reports the range of the study effects and their overlap (the grey area
 shared by all study posteriors; 1 = identical, 0 = disjoint).</p>
 <div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" tabindex="-1"></a>beta_i_list <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="fu">seq_len</span>(S), <span class="cf">function</span>(s) post_i<span class="sc">$</span>beta[, s])</span>
 <span id="cb25-2"><a href="#cb25-2" tabindex="-1"></a>beta_h_list <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="fu">seq_len</span>(S), <span class="cf">function</span>(s) post_h<span class="sc">$</span>beta[, s])</span>
-<span id="cb25-3"><a href="#cb25-3" tabindex="-1"></a><span class="fu">show_tbl</span>(<span class="fu">rbind</span>(<span class="at">independent  =</span> <span class="fu">unlist</span>(<span class="fu">replication_measures_multi</span>(beta_i_list)),</span>
-<span id="cb25-4"><a href="#cb25-4" tabindex="-1"></a>               <span class="at">hierarchical =</span> <span class="fu">unlist</span>(<span class="fu">replication_measures_multi</span>(beta_h_list))),</span>
+<span id="cb25-3"><a href="#cb25-3" tabindex="-1"></a><span class="fu">show_tbl</span>(<span class="fu">rbind</span>(<span class="at">independent  =</span> <span class="fu">unlist</span>(<span class="fu">replication_threshold_free</span>(beta_i_list)),</span>
+<span id="cb25-4"><a href="#cb25-4" tabindex="-1"></a>               <span class="at">hierarchical =</span> <span class="fu">unlist</span>(<span class="fu">replication_threshold_free</span>(beta_h_list))),</span>
 <span id="cb25-5"><a href="#cb25-5" tabindex="-1"></a>         <span class="at">caption =</span> <span class="st">&quot;Threshold-free summaries: divergence and overlap&quot;</span>)</span></code></pre></div>
 <table>
 <caption>Threshold-free summaries: divergence and overlap</caption>

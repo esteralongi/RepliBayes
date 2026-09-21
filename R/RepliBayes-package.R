@@ -23,7 +23,7 @@
 #' [build_stan_data()], [fit_hierarchical()], [fit_independence()],
 #' [replication_ess()], [compute_replication_probs_hier()],
 #' [compute_replication_probs_indep()], [predictive_retro()], [predictive_pro()],
-#' [predict_new_study()] and the threshold-free [replication_measures_multi()].
+#' [predict_new_study()] and the threshold-free [replication_threshold_free()].
 #'
 #' @section GTEx data:
 #' The donor-level GTEx data used in the paper are controlled-access and cannot

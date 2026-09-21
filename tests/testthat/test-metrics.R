@@ -70,7 +70,7 @@ test_that("threshold-free overlap is a coefficient in [0, 1] for any S", {
   set.seed(5)
   beta <- list(rnorm(3000, 0, 1), rnorm(3000, 0.2, 1),
                rnorm(3000, -0.1, 1), rnorm(3000, 0.05, 1))   # S = 4
-  out <- replication_measures_multi(beta)
+  out <- replication_threshold_free(beta)
   expect_true(out$density_overlap >= 0 && out$density_overlap <= 1)
   expect_gt(out$mean_max_divergence, 0)
 })

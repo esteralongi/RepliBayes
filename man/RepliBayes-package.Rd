@@ -30,7 +30,7 @@ The individual building blocks are also exported:
 \code{\link[=build_stan_data]{build_stan_data()}}, \code{\link[=fit_hierarchical]{fit_hierarchical()}}, \code{\link[=fit_independence]{fit_independence()}},
 \code{\link[=replication_ess]{replication_ess()}}, \code{\link[=compute_replication_probs_hier]{compute_replication_probs_hier()}},
 \code{\link[=compute_replication_probs_indep]{compute_replication_probs_indep()}}, \code{\link[=predictive_retro]{predictive_retro()}}, \code{\link[=predictive_pro]{predictive_pro()}},
-\code{\link[=predict_new_study]{predict_new_study()}} and the threshold-free \code{\link[=replication_measures_multi]{replication_measures_multi()}}.
+\code{\link[=predict_new_study]{predict_new_study()}} and the threshold-free \code{\link[=replication_threshold_free]{replication_threshold_free()}}.
 }
 \section{GTEx data}{
 

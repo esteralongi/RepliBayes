@@ -403,15 +403,15 @@ ggplot(dih, aes(metric, p, fill = model)) +
 
 # Threshold-free summaries
 
-`replication_measures_multi()` needs no threshold: it reports the range of the
+`replication_threshold_free()` needs no threshold: it reports the range of the
 study effects and their overlap (the grey area shared by all study posteriors;
 1 = identical, 0 = disjoint).
 
 ```{r threshold-free-num}
 beta_i_list <- lapply(seq_len(S), function(s) post_i$beta[, s])
 beta_h_list <- lapply(seq_len(S), function(s) post_h$beta[, s])
-show_tbl(rbind(independent  = unlist(replication_measures_multi(beta_i_list)),
-               hierarchical = unlist(replication_measures_multi(beta_h_list))),
+show_tbl(rbind(independent  = unlist(replication_threshold_free(beta_i_list)),
+               hierarchical = unlist(replication_threshold_free(beta_h_list))),
          caption = "Threshold-free summaries: divergence and overlap")
 ```
 
