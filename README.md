@@ -1,11 +1,9 @@
 # RepliBayes
 
-Bayesian quantification of replicability. `RepliBayes` fits a Bayesian
-hierarchical model to study-level data and reports the replicability of an
-effect as posterior probabilities, defined relative to a practical-relevance
-threshold `eps` on the scale of the effects (not on p-values). It returns the
-empirical, retrospective and prospective replication probabilities, each with a
-Monte Carlo standard error.
+`RepliBayes` provides a concrete, general implementation of the replicability 
+framework of Alongi, Altoè & Parmigiani, *The Quantification of Replicability*, 
+a set of functions to fit the model and compute the replication probabilities 
+(with Monte Carlo standard errors), plus prior-sensitivity and simulation tools.
 
 Methods: Alongi, Altoè and Parmigiani, *The Quantification of Replicability*.
 
@@ -61,11 +59,11 @@ subset(sim, metric == "P_beta")
 (residual scale).
 
 The metrics are general: they work with any number of studies `S`, any
-consensus level(s) `k` (argument `k`, default 2), and any minimum number of
-agreeing studies `m` in the conditional metrics (argument `m`, default 1). Study
-effects are passed as a list of `S` draw matrices, e.g.
-`replication_ess(list(a1, a2, a3), mu = mu_beta, eps = 0.86, k = 2)`. For the
-retrospective/prospective analyses, `fit_replicability()` lets you choose the
+consensus level(s) `k` (argument `consensus_level`, default 2), and any minimum number of
+agreeing studies `m` in the conditional metrics (argument `min_corroborating`, default 1). 
+Study effects are passed as beta, a list of `S` posterior-draw matrices (iterations × chains); 
+plain vectors are also accepted. `function(beta, generative_beta = NULL, eps, consensus_level = 2, min_corroborating = 1)`. 
+For the retrospective/prospective analyses, `fit_replicability()` lets you choose the
 body of evidence explicitly via `retro_target` / `retro_evidence` (size 1..S-1)
 and `pro_evidence` (size 1..S).
 
@@ -82,7 +80,7 @@ and `pro_evidence` (size 1..S).
 | `replication_ess()` | metrics with MCSE (hierarchical / independence) |
 | `predictive_retro()`, `predictive_pro()` | retrospective / prospective metrics |
 | `compute_replication_probs_hier()`, `compute_replication_probs_indep()` | point-estimate metrics (used in the simulation calibration) |
-| `replication_measures_multi()` | threshold-free summaries |
+| `replication_threshold_free()` | threshold-free summaries |
 
 ## Data
 
