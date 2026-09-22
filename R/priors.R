@@ -33,14 +33,17 @@ rtrunc_t_pos <- function(n, nu, mu, scale) {
   qt_trunc_scaled_vec(stats::runif(n), nu, mu, scale)
 }
 
-#' Default (elicited) prior hyperparameters
+#' Default illustrative prior hyperparameters
 #'
-#' The illustrative empirical-Bayes hyperparameters used in the paper. The three
-#' generative means (`mu_beta`, `mu_alpha`, `mu_sig`) and their scales, and the
-#' three between-study heterogeneities on the log scale (`mu_tau_*`,
-#' `scale_tau_*`), define the elicited priors of the hierarchical model. All are
-#' Student-t with `nu` degrees of freedom; the intercept, residual scale and the
-#' heterogeneities are truncated to the positive half-line.
+#' Illustrative hyperparameters for use with the bundled synthetic data. These
+#' are **not** the paper's elicited empirical-Bayes priors (Table 3), which are
+#' derived from the controlled-access GTEx pool and cannot be redistributed;
+#' supply your own via the same list structure. The three generative means
+#' (`mu_beta`, `mu_alpha`, `mu_sig`) and their scales, and the three
+#' between-study heterogeneities (`mu_tau_*`, `scale_tau_*`), define the priors
+#' of the hierarchical model. All are Student-t with `nu` degrees of freedom;
+#' the intercept, residual scale and the heterogeneities `tau` are truncated to
+#' the positive half-line (the prior is on `tau` itself, not on its logarithm).
 #'
 #' @return A named list of hyperparameters, suitable as the `priors` argument of
 #'   [build_stan_data()], [fit_hierarchical()], [fit_independence()] and

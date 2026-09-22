@@ -613,7 +613,7 @@ object, so you can inspect the MCMC chains directly. Sampling is healthy
 when there are no divergences, split-<span class="math inline">\(\widehat
 R\)</span> is close to 1, and the effective sample sizes are
 adequate.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>pars <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;mu_beta&quot;</span>, <span class="st">&quot;tau_beta&quot;</span>, <span class="st">&quot;tau_alpha&quot;</span>, <span class="st">&quot;tau_sig_m&quot;</span>, <span class="st">&quot;mu_alpha&quot;</span>, <span class="st">&quot;mu_sig_m&quot;</span>)</span>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a>pars <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;mu_beta&quot;</span>, <span class="st">&quot;tau_beta&quot;</span>, <span class="st">&quot;tau_alpha&quot;</span>, <span class="st">&quot;tau_sig&quot;</span>, <span class="st">&quot;mu_alpha&quot;</span>, <span class="st">&quot;mu_sig&quot;</span>)</span>
 <span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>rstan<span class="sc">::</span><span class="fu">check_hmc_diagnostics</span>(res<span class="sc">$</span>fit_hierarchical)</span>
 <span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a><span class="co">#&gt; </span></span>
 <span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="co">#&gt; Divergences:</span></span>
@@ -650,7 +650,7 @@ size</caption>
 <td align="right">1045.313</td>
 </tr>
 <tr class="even">
-<td align="left">tau_sig_m</td>
+<td align="left">tau_sig</td>
 <td align="right">1.000</td>
 <td align="right">878.162</td>
 </tr>
@@ -660,7 +660,7 @@ size</caption>
 <td align="right">1306.465</td>
 </tr>
 <tr class="even">
-<td align="left">mu_sig_m</td>
+<td align="left">mu_sig</td>
 <td align="right">1.005</td>
 <td align="right">627.523</td>
 </tr>
@@ -709,7 +709,7 @@ overlap like a “fuzzy caterpillar”. To get the raw draws with the
 <span id="cb13-6"><a href="#cb13-6" tabindex="-1"></a><span class="co">#&gt; </span></span>
 <span id="cb13-7"><a href="#cb13-7" tabindex="-1"></a><span class="co">#&gt; Energy:</span></span>
 <span id="cb13-8"><a href="#cb13-8" tabindex="-1"></a><span class="fu">show_tbl</span>(rstan<span class="sc">::</span><span class="fu">summary</span>(res<span class="sc">$</span>fit_independence,</span>
-<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a>                        <span class="at">pars =</span> <span class="fu">c</span>(<span class="st">&quot;mu_beta&quot;</span>, <span class="st">&quot;mu_alpha&quot;</span>, <span class="st">&quot;mu_sig_m&quot;</span>))<span class="sc">$</span>summary[, <span class="fu">c</span>(<span class="st">&quot;Rhat&quot;</span>, <span class="st">&quot;n_eff&quot;</span>)],</span>
+<span id="cb13-9"><a href="#cb13-9" tabindex="-1"></a>                        <span class="at">pars =</span> <span class="fu">c</span>(<span class="st">&quot;mu_beta&quot;</span>, <span class="st">&quot;mu_alpha&quot;</span>, <span class="st">&quot;mu_sig&quot;</span>))<span class="sc">$</span>summary[, <span class="fu">c</span>(<span class="st">&quot;Rhat&quot;</span>, <span class="st">&quot;n_eff&quot;</span>)],</span>
 <span id="cb13-10"><a href="#cb13-10" tabindex="-1"></a>         <span class="at">caption =</span> <span class="st">&quot;Independence-limit model: split-Rhat and effective sample size&quot;</span>)</span></code></pre></div>
 <table>
 <caption>Independence-limit model: split-Rhat and effective sample
@@ -733,7 +733,7 @@ size</caption>
 <td align="right">1353.132</td>
 </tr>
 <tr class="odd">
-<td align="left">mu_sig_m</td>
+<td align="left">mu_sig</td>
 <td align="right">1.001</td>
 <td align="right">1800.367</td>
 </tr>

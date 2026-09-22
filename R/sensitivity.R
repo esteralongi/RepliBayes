@@ -88,7 +88,7 @@ sensitivity_prior <- function(data, priors = default_priors(), eps = NULL,
     tau_alpha = list(mu = priors$mu_tau_alpha, scale = priors$scale_tau_alpha,
                      fmu = "prior_mu_tau_alpha",  fsc = "prior_scale_tau_alpha",  post = "tau_alpha"),
     tau_sig   = list(mu = priors$mu_tau_sig,   scale = priors$scale_tau_sig,
-                     fmu = "prior_mu_tau_sig_m", fsc = "prior_scale_tau_sig_m", post = "tau_sig_m")
+                     fmu = "prior_mu_tau_sig", fsc = "prior_scale_tau_sig", post = "tau_sig")
   )
 
   ## grid of prior medians = the requested percentiles of the elicited prior

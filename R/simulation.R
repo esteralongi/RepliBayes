@@ -25,7 +25,7 @@
 #' p^{(r)})/\sqrt{R_{\mathrm{used}}}}.
 #'
 #' The empirical ground truth (study sample sizes, genotype frequencies, and the
-#' generative locations `mu_beta`, `a`, `mu_alpha`, `alpha`, `mu_sig_m`, `sigma_M`)
+#' generative locations `mu_beta`, `a`, `mu_alpha`, `alpha`, `mu_sig`, `sigma`)
 #' is taken from a fitted hierarchical model; the chosen heterogeneity is then
 #' set to the requested percentiles of its prior.
 #'
@@ -97,7 +97,7 @@ simulate_replicability <- function(fit, data, priors = default_priors(), eps = N
   post <- rstan::extract(fit)
   mu_b_real     <- mean(post$mu_beta);      b_s_real   <- colMeans(post$beta)
   mu_alpha_real <- mean(post$mu_alpha);  a_s_real   <- colMeans(post$alpha)
-  mu_sigma_real <- mean(post$mu_sig_m);  sig_s_real <- colMeans(post$sigma_M)
+  mu_sigma_real <- mean(post$mu_sig);  sig_s_real <- colMeans(post$sigma)
 
   ## study positions (fixed) and the varied component's prior
   placement <- seq(0.10, 0.90, length.out = S)

@@ -2,7 +2,7 @@
 % Please edit documentation in R/priors.R
 \name{default_priors}
 \alias{default_priors}
-\title{Default (elicited) prior hyperparameters}
+\title{Default illustrative prior hyperparameters}
 \usage{
 default_priors()
 }
@@ -12,12 +12,15 @@ A named list of hyperparameters, suitable as the \code{priors} argument of
 \code{\link[=fit_replicability]{fit_replicability()}}. Copy and edit fields to supply your own priors.
 }
 \description{
-The illustrative empirical-Bayes hyperparameters used in the paper. The three
-generative means (\code{mu_beta}, \code{mu_alpha}, \code{mu_sig}) and their scales, and the
-three between-study heterogeneities on the log scale (\verb{mu_tau_*},
-\verb{scale_tau_*}), define the elicited priors of the hierarchical model. All are
-Student-t with \code{nu} degrees of freedom; the intercept, residual scale and the
-heterogeneities are truncated to the positive half-line.
+Illustrative hyperparameters for use with the bundled synthetic data. These
+are \strong{not} the paper's elicited empirical-Bayes priors (Table 3), which are
+derived from the controlled-access GTEx pool and cannot be redistributed;
+supply your own via the same list structure. The three generative means
+(\code{mu_beta}, \code{mu_alpha}, \code{mu_sig}) and their scales, and the three
+between-study heterogeneities (\verb{mu_tau_*}, \verb{scale_tau_*}), define the priors
+of the hierarchical model. All are Student-t with \code{nu} degrees of freedom;
+the intercept, residual scale and the heterogeneities \code{tau} are truncated to
+the positive half-line (the prior is on \code{tau} itself, not on its logarithm).
 }
 \examples{
 priors <- default_priors()

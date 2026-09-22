@@ -31,7 +31,7 @@ fit_replicability(
 \item{priors}{Prior hyperparameters (see \code{\link[=default_priors]{default_priors()}}).}
 
 \item{eps}{Practical-relevance threshold on the scale of the effects. If
-\code{NULL} (default) it is set to 10\\% of the baseline (predictor = 0) mean
+\code{NULL} (default) it is set to 10\% of the baseline (predictor = 0) mean
 outcome.}
 
 \item{consensus_level}{Consensus level(s) passed to \code{\link[=replication_ess]{replication_ess()}}: at

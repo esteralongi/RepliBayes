@@ -26,7 +26,7 @@ sensitivity_prior(
 
 \item{priors}{Prior hyperparameters (see \code{\link[=default_priors]{default_priors()}}).}
 
-\item{eps}{Practical-relevance threshold; if \code{NULL}, 10\\% of the baseline
+\item{eps}{Practical-relevance threshold; if \code{NULL}, 10\% of the baseline
 (predictor = 0) mean outcome.}
 
 \item{target}{Which heterogeneity's prior to shift: \code{"tau_beta"} (effect,

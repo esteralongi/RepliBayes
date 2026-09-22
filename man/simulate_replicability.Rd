@@ -35,7 +35,7 @@ the varied component and as the prior of the fitted model
 (see \code{\link[=default_priors]{default_priors()}}).}
 
 \item{eps}{Practical-relevance threshold; if \code{NULL}, taken from the \code{RepliBayes}
-object or computed as 10\\% of the baseline mean outcome.}
+object or computed as 10\% of the baseline mean outcome.}
 
 \item{vary}{Which generative component to vary across levels: \code{"tau_beta"}
 (effect heterogeneity, default), \code{"tau_alpha"} (intercept heterogeneity) or
@@ -76,7 +76,7 @@ p^{(r)})/\sqrt{R_{\mathrm{used}}}}.
 }
 \details{
 The empirical ground truth (study sample sizes, genotype frequencies, and the
-generative locations \code{mu_beta}, \code{a}, \code{mu_alpha}, \code{alpha}, \code{mu_sig_m}, \code{sigma_M})
+generative locations \code{mu_beta}, \code{a}, \code{mu_alpha}, \code{alpha}, \code{mu_sig}, \code{sigma})
 is taken from a fitted hierarchical model; the chosen heterogeneity is then
 set to the requested percentiles of its prior.
 

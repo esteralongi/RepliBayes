@@ -33,14 +33,14 @@ build_stan_data <- function(data, priors = default_priors(),
     nu = priors$nu,
     prior_mu_beta     = priors$mu_beta,     prior_scale_beta     = priors$scale_beta,
     prior_mu_alpha = priors$mu_alpha, prior_scale_alpha = priors$scale_alpha,
-    prior_mu_sig_m = priors$mu_sig,   prior_scale_sig_m = priors$scale_sig
+    prior_mu_sig = priors$mu_sig,   prior_scale_sig = priors$scale_sig
   )
 
   if (model == "hierarchical") {
     c(base, list(
       prior_mu_tau_beta     = priors$mu_tau_beta,     prior_scale_tau_beta     = priors$scale_tau_beta,
       prior_mu_tau_alpha  = priors$mu_tau_alpha, prior_scale_tau_alpha  = priors$scale_tau_alpha,
-      prior_mu_tau_sig_m = priors$mu_tau_sig,   prior_scale_tau_sig_m = priors$scale_tau_sig
+      prior_mu_tau_sig = priors$mu_tau_sig,   prior_scale_tau_sig = priors$scale_tau_sig
     ))
   } else {
     ## independence limit: tau fixed at the 99.9th percentile of each prior

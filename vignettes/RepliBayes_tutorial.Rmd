@@ -169,7 +169,7 @@ chains directly. Sampling is healthy when there are no divergences, split-$\wide
 R$ is close to 1, and the effective sample sizes are adequate.
 
 ```{r diag-hier, fig.width = 6.5, fig.height = 4}
-pars <- c("mu_beta", "tau_beta", "tau_alpha", "tau_sig_m", "mu_alpha", "mu_sig_m")
+pars <- c("mu_beta", "tau_beta", "tau_alpha", "tau_sig", "mu_alpha", "mu_sig")
 rstan::check_hmc_diagnostics(res$fit_hierarchical)
 show_tbl(rstan::summary(res$fit_hierarchical, pars = pars)$summary[, c("Rhat", "n_eff")],
          caption = "Hierarchical model: split-Rhat and effective sample size")
@@ -192,7 +192,7 @@ parameters):
 ```{r diag-indep}
 rstan::check_hmc_diagnostics(res$fit_independence)
 show_tbl(rstan::summary(res$fit_independence,
-                        pars = c("mu_beta", "mu_alpha", "mu_sig_m"))$summary[, c("Rhat", "n_eff")],
+                        pars = c("mu_beta", "mu_alpha", "mu_sig"))$summary[, c("Rhat", "n_eff")],
          caption = "Independence-limit model: split-Rhat and effective sample size")
 ```
 
