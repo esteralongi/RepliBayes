@@ -12,25 +12,44 @@ a practical-relevance threshold on the scale of the effects (\code{eps}) rather
 than on p-values.
 }
 \details{
-The package has three top-level entry points:
+There are two ways to use the package, depending on your input.
+
+\strong{From raw data.} If your data are in long format, one row per
+observation, with columns \code{study} (the study/group label), \code{x} (the
+predictor) and \code{y} (the outcome), everything runs from a single call:
 \describe{
 \item{\code{\link[=fit_replicability]{fit_replicability()}}}{fits the hierarchical (partial-pooling) and
 independence-limit models and returns all replication probabilities
-(empirical, retrospective and prospective), each with a Monte Carlo
-standard error.}
+(hierarchical, independent, retrospective and prospective), each with a Monte
+Carlo standard error.}
 \item{\code{\link[=sensitivity_prior]{sensitivity_prior()}}}{prior-sensitivity analysis: refits the model
 while shifting the prior on a chosen between-study heterogeneity.}
 \item{\code{\link[=simulate_replicability]{simulate_replicability()}}}{calibration by simulation, varying one
 component of the generative model and summarising the metrics across
 replicates.}
 }
-Priors are chosen with \code{\link[=default_priors]{default_priors()}} (or supplied by the user).
+Priors are chosen with \code{\link[=default_priors]{default_priors()}} or supplied by the user (with the
+truncated-Student-t helpers \code{\link[=qt_trunc_scaled_vec]{qt_trunc_scaled_vec()}} and \code{\link[=rtrunc_t_pos]{rtrunc_t_pos()}}).
 
-The individual building blocks are also exported:
-\code{\link[=build_stan_data]{build_stan_data()}}, \code{\link[=fit_hierarchical]{fit_hierarchical()}}, \code{\link[=fit_independence]{fit_independence()}},
-\code{\link[=replication_ess]{replication_ess()}}, \code{\link[=compute_replication_probs_hier]{compute_replication_probs_hier()}},
-\code{\link[=compute_replication_probs_indep]{compute_replication_probs_indep()}}, \code{\link[=predictive_retro]{predictive_retro()}}, \code{\link[=predictive_pro]{predictive_pro()}},
-\code{\link[=predict_new_study]{predict_new_study()}} and the threshold-free \code{\link[=replication_threshold_free]{replication_threshold_free()}}.
+\strong{From posterior draws.} If you have already fitted your own model and
+have posterior draws of the study-specific effects, you can compute the metrics
+directly, without a data frame. These take the draws as a list of \code{S}
+[iterations x chains] matrices (one per study), and optionally the draws of the
+generative effect:
+\describe{
+\item{\code{\link[=compute_replication_probs_indep]{compute_replication_probs_indep()}}, \code{\link[=compute_replication_probs_hier]{compute_replication_probs_hier()}}}{point
+estimates of all replication probabilities.}
+\item{\code{\link[=replication_ess]{replication_ess()}}}{the same probabilities, each with a Monte Carlo
+standard error.}
+\item{\code{\link[=predictive_retro]{predictive_retro()}}, \code{\link[=predictive_pro]{predictive_pro()}}}{retrospective and
+prospective predictive metrics.}
+\item{\code{\link[=replication_threshold_free]{replication_threshold_free()}}}{threshold-free summaries (divergence
+and density overlap), needing no \code{eps}.}
+}
+
+The lower-level building blocks are also exported:
+\code{\link[=build_stan_data]{build_stan_data()}}, \code{\link[=fit_hierarchical]{fit_hierarchical()}}, \code{\link[=fit_independence]{fit_independence()}} and
+\code{\link[=predict_new_study]{predict_new_study()}}.
 }
 \section{GTEx data}{
 

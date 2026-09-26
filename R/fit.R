@@ -12,9 +12,9 @@
   mod
 }
 
-#' Fit the hierarchical (partial-pooling) model
+#' Fit the hierarchical model
 #'
-#' @param data A data frame with columns `study`, `x`, `m`.
+#' @param data A data frame with columns `study`, `x`, `y`.
 #' @param priors Prior hyperparameters (see [default_priors()]).
 #' @param chains,iter,warmup,seed Passed to [rstan::sampling()].
 #' @param adapt_delta,max_treedepth NUTS control parameters.
@@ -60,7 +60,7 @@ fit_independence <- function(data, priors = default_priors(),
 #' Predictive effect of a new study
 #'
 #' Draws the posterior-predictive effect of a new study from a fitted
-#' hierarchical model: for each posterior draw, `mu_beta + t_nu * tau_beta`.
+#' hierarchical model.
 #'
 #' @param fit A hierarchical [rstan::stanfit-class] object.
 #' @param nu Degrees of freedom of the study-level Student-t (default 3).
@@ -85,10 +85,10 @@ predict_new_study <- function(fit, nu = 3, seed = NULL) {
 #' Quantify replicability in one call
 #'
 #' Fits the hierarchical and independence-limit models and returns all
-#' replication probabilities (empirical, retrospective and prospective), each
+#' replication probabilities (hierarchical, independence-limit, retrospective and prospective), each
 #' with its Monte Carlo standard error.
 #'
-#' @param data A data frame with columns `study`, `x`, `m`.
+#' @param data A data frame with columns `study`, `x`, `y`.
 #' @param priors Prior hyperparameters (see [default_priors()]).
 #' @param eps Practical-relevance threshold on the scale of the effects. If
 #'   `NULL` (default) it is set to 10\% of the baseline (predictor = 0) mean
@@ -137,7 +137,7 @@ fit_replicability <- function(data, priors = default_priors(), eps = NULL,
                               chains = 4, iter = 3000, warmup = floor(iter / 2),
                               seed = 42, adapt_delta = 0.99, max_treedepth = 15,
                               verbose = TRUE, ...) {
-  stopifnot(all(c("study", "x", "m") %in% names(data)))
+  stopifnot(all(c("study", "x", "y") %in% names(data)))
   studies <- sort(unique(data$study))
   S <- length(studies)
   if (S < 2L) stop("Need at least 2 studies; 'data$study' has ", S, ".")
@@ -157,13 +157,13 @@ fit_replicability <- function(data, priors = default_priors(), eps = NULL,
     lapply(seq_len(n), function(s) arr[, , sprintf("beta[%d]", s)])
   }
 
-  ## --- full-data fits -------------------------------------------------------
+  ## full-data fits 
   say("Fitting hierarchical model ...")
   fit_h <- fit_h_fun(data)
   say("Fitting independence-limit model ...")
   fit_i <- fit_i_fun(data)
 
-  ## --- empirical metrics (keep chain structure for the ESS) -----------------
+  ## empirical metrics (keep chain structure for the ESS)
   say("Computing replication probabilities ...")
   mu_h        <- rstan::extract(fit_h, pars = "mu_beta", permuted = FALSE)[, , "mu_beta"]
   report_hier  <- replication_ess(a_list_from_fit(fit_h, S), generative_beta = mu_h, eps = eps,
@@ -171,7 +171,7 @@ fit_replicability <- function(data, priors = default_priors(), eps = NULL,
   report_indep <- replication_ess(a_list_from_fit(fit_i, S), generative_beta = NULL, eps = eps,
                                   consensus_level = consensus_level, min_corroborating = min_corroborating)
 
-  ## --- prospective: a new study drawn from a body of evidence ---------------
+  ## prospective: a new study drawn from a body of evidence
   report_pro <- NULL; pro_ev <- NULL
   if (prospective) {
     pro_ev <- if (is.null(pro_evidence)) studies else pro_evidence
@@ -182,7 +182,7 @@ fit_replicability <- function(data, priors = default_priors(), eps = NULL,
     report_pro <- predictive_pro(a_pro_ic, eps)
   }
 
-  ## --- retrospective: predict a target study from a body of evidence --------
+  ## retrospective: predict a target study from a body of evidence
   report_held <- NULL; fit_ev <- NULL; fit_obs <- NULL; rt <- NULL; re_ev <- NULL
   if (retrospective) {
     rt    <- if (is.null(retro_target))   studies[1]            else retro_target
@@ -233,7 +233,7 @@ print.RepliBayes <- function(x, ...) {
   if (nrow(mm)) {
     cat("  hierarchical (selected metrics):\n")
     for (i in seq_len(nrow(mm)))
-      cat(sprintf("    %-18s %.3f +/- %.3f\n", mm$metric[i], mm$p[i],
+      cat(sprintf("    %-18s %.3f +/- %.3f\n", mm$metric[i], mm$estimate[i],
                   ifelse(is.na(mm$mcse[i]), 0, mm$mcse[i])))
   }
   parts <- c(

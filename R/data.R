@@ -1,4 +1,4 @@
-#' Synthetic study-level dataset
+#' Synthetic dataset
 #'
 #' A synthetic dataset with the same structure as the GTEx analysis in the paper
 #' (three groups playing the role of three studies), provided so that the whole
@@ -9,7 +9,7 @@
 #' \describe{
 #'   \item{study}{integer study/group label (1, 2, 3).}
 #'   \item{x}{predictor (genotype dosage, 0/1/2).}
-#'   \item{m}{outcome (expression on the analysis scale).}
+#'   \item{y}{outcome (expression on the analysis scale).}
 #' }
 #'
 #' @details Built from `inst/extdata/synthetic_data.csv` by

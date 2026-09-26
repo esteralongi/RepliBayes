@@ -27,12 +27,12 @@ test_that("replication_ess returns the right shape and finite MCSEs", {
   tab_i <- replication_ess(a, generative_beta = NULL, eps = 0.2)
   tab_h <- replication_ess(a, generative_beta = mu,   eps = 0.2)
 
-  expect_setequal(names(tab_i), c("metric", "p", "k", "n", "ess", "mcse"))
+  expect_setequal(names(tab_i), c("metric", "estimate", "n_event", "n_draws", "ess", "mcse"))
   expect_true(all(c("P_overall_2", "P_pos_2", "P_cond_O1_m1") %in% tab_i$metric))
   expect_true(all(c("P_beta", "P_gen_pos_2", "P_c_pos_2") %in% tab_h$metric))
   expect_gt(nrow(tab_h), nrow(tab_i))
 
-  p <- tab_h$p[!is.na(tab_h$p)]
+  p <- tab_h$estimate[!is.na(tab_h$estimate)]
   expect_true(all(p >= 0 & p <= 1))
 })
 
@@ -43,7 +43,7 @@ test_that("point and MCSE versions give identical point estimates", {
 
   pt <- compute_replication_probs_hier(a, mu, eps)
   es <- replication_ess(a, generative_beta = mu, eps = eps)
-  get <- function(tab, nm) tab$p[tab$metric == nm]
+  get <- function(tab, nm) tab$estimate[tab$metric == nm]
 
   for (nm in c("P_overall_2", "P_pos_2", "P_beta", "P_gen_pos_2", "P_cond_O1_m1"))
     expect_equal(pt[[nm]], get(es, nm))

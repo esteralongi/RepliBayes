@@ -1,11 +1,11 @@
-## metrics_mcse.R -- replication probabilities WITH Monte Carlo standard errors.
+## metrics_mcse.R -- replication probabilities with Monte Carlo standard errors.
 ##
 ## MCSE(p_hat) = sqrt( p_hat (1 - p_hat) / ESS ), where
 ##   - unconditional metrics : ESS = effective sample size of the 0/1 indicator
-##                             (posterior::ess_basic, keeps the MCMC autocorrelation);
+##                             (posterior::ess_basic);
 ##   - conditional  metrics  : ESS = number of draws satisfying the conditioning
 ##                             event.
-## The metric DEFINITIONS come from .metric_entries() (metrics.R), so the point
+## The metric definitions come from .metric_entries() (metrics.R), so the point
 ## estimates here are identical to compute_replication_probs_*(). Extract draws
 ## with permuted = FALSE so the iterations x chains structure (and, for the
 ## retrospective metrics, the draw-by-draw pairing) is preserved.
@@ -25,7 +25,7 @@
   p   <- mean(u_ic); k <- round(p * N)
   ess <- .ess_of(u_ic); if (is.finite(ess)) ess <- min(ess, N)
   mcse <- if (p > 0 && p < 1 && is.finite(ess)) sqrt(p * (1 - p) / ess) else NA_real_
-  tibble::tibble(metric = name, p = p, k = k, n = N, ess = ess, mcse = mcse)
+  tibble::tibble(metric = name, estimate = p, n_event = k, n_draws = N, ess = ess, mcse = mcse)
 }
 
 ## conditional metric P(A|B): p = kA/nB, MCSE = sqrt(p(1-p)/nB)
@@ -33,40 +33,41 @@
 .row_cond <- function(name, num_ic, den_ic) {
   nB <- sum(den_ic); kA <- sum(num_ic)
   if (nB == 0)
-    return(tibble::tibble(metric = name, p = NA_real_, k = 0, n = 0,
+    return(tibble::tibble(metric = name, estimate = NA_real_, n_event = 0, n_draws = 0,
                           ess = NA_real_, mcse = NA_real_))
   p    <- kA / nB
   mcse <- if (p > 0 && p < 1) sqrt(p * (1 - p) / nB) else NA_real_
-  tibble::tibble(metric = name, p = p, k = kA, n = nB, ess = nB, mcse = mcse)
+  tibble::tibble(metric = name, estimate = p, n_event = kA, n_draws = nB, ess = nB, mcse = mcse)
 }
 
 #' Replication probabilities with Monte Carlo standard errors
 #'
-#' Study-level and (optionally) generative-consistency replication
-#' probabilities for a general number of studies `S` and consensus level `k`,
-#' each reported with its Monte Carlo standard error. This is the function used
-#' to build the supplement tables.
+#' Replication probabilities for a general number of studies `S` and consensus level 
+#' `consensus_level`, each reported with its Monte Carlo standard error. 
+#' This is the function used to build the supplement tables.
 #'
 #' @param beta A list of `S` posterior-draw matrices \[iterations x chains\] of
 #'   the study-specific effects. Plain vectors are also accepted (treated as a
 #'   single chain). Extract with `rstan::extract(fit, permuted = FALSE)` to keep
 #'   the chain structure so the ESS reflects the MCMC autocorrelation.
 #' @param generative_beta Optional matrix of posterior draws of the generative
-#'   effect (`mu_beta`). If `NULL` (default) only the study-level metrics are
-#'   returned (independence limit); if supplied, the generative-consistency
+#'   effect. If `NULL` (default) only the study-level metrics are
+#'   returned (independence-limit); if supplied, the generative-consistency
 #'   metrics are added (hierarchical model).
 #' @param eps Practical-relevance threshold on the scale of the effects.
 #' @param consensus_level Consensus level(s): at least `consensus_level` of the
 #'   `S` studies agree. A vector is allowed (one block of metrics per value).
 #'   Default 2.
 #' @param min_corroborating For the per-study conditional metrics, the minimum
-#'   number of *other* studies required to corroborate the discovery of the
+#'   number of other studies required to corroborate the discovery of the
 #'   reference study. Default 1.
 #'
 #' @return A [tibble][tibble::tibble] with one row per metric and columns
-#'   `metric`, `p`, `k`, `n`, `ess`, `mcse`. (Here the `k` column is the count of
-#'   1s behind each probability, not the consensus level, which is in the metric
-#'   name.)
+#'   `metric`, `estimate`, `n_event`, `n_draws`, `ess`, `mcse`: the metric name,
+#'   the posterior estimate (`estimate`), the number of draws meeting the event
+#'   (`n_event`), the number of draws (`n_draws`; for conditional metrics, the
+#'   number satisfying the conditioning event), the effective sample size
+#'   (`ess`), and the Monte Carlo standard error (`mcse`).
 #'
 #' @details For a metric with all-zero draws the rule of three gives an upper
 #'   bound `< 3/n`; conditional metrics with fewer than 30 conditioning draws
@@ -97,9 +98,9 @@ replication_ess <- function(beta, generative_beta = NULL, eps, consensus_level =
 #'   draw-by-draw with `beta_obs`.
 #' @param eps Practical-relevance threshold on the scale of the effects.
 #'
-#' @return A [tibble][tibble::tibble] with columns `metric`, `p`, `k`, `n`,
-#'   `ess`, `mcse` for the retrospective metrics (`P_overall_l`, `P_null_l`,
-#'   `P_non_null_l`, `P_pos_l`, `P_neg_l`).
+#' @return A [tibble][tibble::tibble] with columns `metric`, `estimate`,
+#'   `n_event`, `n_draws`, `ess`, `mcse` for the retrospective metrics
+#'   (`P_overall_l`, `P_null_l`, `P_non_null_l`, `P_pos_l`, `P_neg_l`).
 #'
 #' @details `beta_obs` and `beta_pred` come from disjoint data, so the paired
 #'   indicator is a valid estimator. Extract both with `permuted = FALSE` (and a
@@ -129,9 +130,9 @@ predictive_retro <- function(beta_obs, beta_pred, eps) {
 #'   of a new study's effect.
 #' @param eps Practical-relevance threshold on the scale of the effects.
 #'
-#' @return A [tibble][tibble::tibble] with columns `metric`, `p`, `k`, `n`,
-#'   `ess`, `mcse` for the prospective metrics (`P_non_null_p`, `P_null_p`,
-#'   `P_pos_p`, `P_neg_p`).
+#' @return A [tibble][tibble::tibble] with columns `metric`, `estimate`,
+#'   `n_event`, `n_draws`, `ess`, `mcse` for the prospective metrics
+#'   (`P_non_null_p`, `P_null_p`, `P_pos_p`, `P_neg_p`).
 #' @export
 predictive_pro <- function(beta_new, eps) {
   beta_new <- as.matrix(beta_new)

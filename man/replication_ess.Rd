@@ -35,9 +35,11 @@ reference study. Default 1.}
 }
 \value{
 A \link[tibble:tibble]{tibble} with one row per metric and columns
-\code{metric}, \code{p}, \code{k}, \code{n}, \code{ess}, \code{mcse}. (Here the \code{k} column is the count of
-1s behind each probability, not the consensus level, which is in the metric
-name.)
+\code{metric}, \code{estimate}, \code{n_event}, \code{n_draws}, \code{ess}, \code{mcse}: the metric name,
+the posterior estimate (\code{estimate}), the number of draws meeting the event
+(\code{n_event}), the number of draws (\code{n_draws}; for conditional metrics, the
+number satisfying the conditioning event), the effective sample size (\code{ess}),
+and the Monte Carlo standard error (\code{mcse}).
 }
 \description{
 Study-level and (optionally) generative-consistency replication

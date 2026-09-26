@@ -36,14 +36,14 @@ rtrunc_t_pos <- function(n, nu, mu, scale) {
 #' Default illustrative prior hyperparameters
 #'
 #' Illustrative hyperparameters for use with the bundled synthetic data. These
-#' are **not** the paper's elicited empirical-Bayes priors (Table 3), which are
+#' are not the paper's elicited empirical-Bayes priors (Table 3), which are
 #' derived from the controlled-access GTEx pool and cannot be redistributed;
 #' supply your own via the same list structure. The three generative means
-#' (`mu_beta`, `mu_alpha`, `mu_sig`) and their scales, and the three
-#' between-study heterogeneities (`mu_tau_*`, `scale_tau_*`), define the priors
+#' (`mu_beta`, `mu_alpha`, `mu_sig`) and their scales (`tau_beta`, `tau_alpha`, `tau_sig`),
+#' and the three between-study heterogeneities (`mu_tau_*`, `scale_tau_*`), define the priors
 #' of the hierarchical model. All are Student-t with `nu` degrees of freedom;
 #' the intercept, residual scale and the heterogeneities `tau` are truncated to
-#' the positive half-line (the prior is on `tau` itself, not on its logarithm).
+#' the positive half-line.
 #'
 #' @return A named list of hyperparameters, suitable as the `priors` argument of
 #'   [build_stan_data()], [fit_hierarchical()], [fit_independence()] and
@@ -67,5 +67,5 @@ default_priors <- function() {
 
 ## Practical-relevance threshold eps = frac * baseline (genotype-0) mean outcome.
 .default_eps <- function(data, frac = 0.10) {
-  frac * mean(data$m[data$x == 0])
+  frac * mean(data$y[data$x == 0])
 }

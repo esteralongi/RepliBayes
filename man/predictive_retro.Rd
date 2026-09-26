@@ -17,9 +17,9 @@ draw-by-draw with \code{beta_obs}.}
 \item{eps}{Practical-relevance threshold on the scale of the effects.}
 }
 \value{
-A \link[tibble:tibble]{tibble} with columns \code{metric}, \code{p}, \code{k}, \code{n},
-\code{ess}, \code{mcse} for the retrospective metrics (\code{P_overall_l}, \code{P_null_l},
-\code{P_non_null_l}, \code{P_pos_l}, \code{P_neg_l}).
+A \link[tibble:tibble]{tibble} with columns \code{metric}, \code{estimate},
+\code{n_event}, \code{n_draws}, \code{ess}, \code{mcse} for the retrospective metrics
+(\code{P_overall_l}, \code{P_null_l}, \code{P_non_null_l}, \code{P_pos_l}, \code{P_neg_l}).
 }
 \description{
 Paired-indicator replication probabilities that compare the observed effect

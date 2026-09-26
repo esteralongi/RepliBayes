@@ -3,7 +3,7 @@ data {
   int<lower=1> S;
   array[N] int<lower=1,upper=S> study;
   vector[N] X;
-  vector[N] M;
+  vector[N] Y;
   real<lower=1> nu;
 
   // Hyperpriors on the generative means
@@ -41,14 +41,14 @@ model {
   target += -S * student_t_lccdf(0 | nu, mu_sig, prior_tau_sig_fixed);
 
   for (n in 1:N)
-    M[n] ~ normal(alpha[study[n]] + beta[study[n]] * X[n], sigma[study[n]]);
+    Y[n] ~ normal(alpha[study[n]] + beta[study[n]] * X[n], sigma[study[n]]);
 }
 generated quantities {
-  vector[N] m_rep;
-  vector[N] log_lik_M;
+  vector[N] y_rep;
+  vector[N] log_lik_Y;
   for (n in 1:N) {
-    real mu_m = alpha[study[n]] + beta[study[n]] * X[n];
-    m_rep[n]     = normal_rng(mu_m, sigma[study[n]]);
-    log_lik_M[n] = normal_lpdf(M[n] | mu_m, sigma[study[n]]);
+    real mu_y = alpha[study[n]] + beta[study[n]] * X[n];
+    y_rep[n]     = normal_rng(mu_y, sigma[study[n]]);
+    log_lik_Y[n] = normal_lpdf(Y[n] | mu_y, sigma[study[n]]);
   }
 }

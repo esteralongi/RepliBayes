@@ -9,13 +9,30 @@ Methods: Alongi, Altoè and Parmigiani, *The Quantification of Replicability*.
 
 ## Installation
 
+`RepliBayes` fits its models with [rstan](https://mc-stan.org/rstan/), so you
+need a working C++ toolchain and the `rstan` package before installing.
+
+**1. C++ toolchain** (needed by Stan): Windows →
+[Rtools](https://cran.r-project.org/bin/windows/Rtools/); macOS → run
+`xcode-select --install` in Terminal; Linux → a system C++ compiler (`g++`).
+
+**2. rstan**:
+
 ```r
-# install.packages("devtools")
-devtools::install_github("esteralongi/RepliBayes", build_vignettes = TRUE)
+install.packages("rstan")
 ```
 
-`RepliBayes` uses [rstan](https://mc-stan.org/rstan/); a working C++ toolchain
-is required to compile the two Stan models on first use.
+**3. RepliBayes**:
+
+```r
+# install.packages("remotes")
+remotes::install_github("esteralongi/RepliBayes")
+```
+
+The install above is quick. Add `build_vignettes = TRUE` only if you also want
+the tutorial vignette built locally — it compiles the Stan models and takes a
+few minutes. The two Stan models are otherwise compiled from source the first
+time you fit a model.
 
 ## Quick start
 
@@ -61,8 +78,8 @@ subset(sim, metric == "P_beta")
 The metrics are general: they work with any number of studies `S`, any
 consensus level(s) `k` (argument `consensus_level`, default 2), and any minimum number of
 agreeing studies `m` in the conditional metrics (argument `min_corroborating`, default 1). 
-Study effects are passed as beta, a list of `S` posterior-draw matrices (iterations × chains); 
-plain vectors are also accepted. `function(beta, generative_beta = NULL, eps, consensus_level = 2, min_corroborating = 1)`. 
+Study effects are passed to the metric functions as `beta`, a list of `S`
+posterior-draw matrices (iterations × chains); plain vectors are also accepted.
 For the retrospective/prospective analyses, `fit_replicability()` lets you choose the
 body of evidence explicitly via `retro_target` / `retro_evidence` (size 1..S-1)
 and `pro_evidence` (size 1..S).
@@ -71,7 +88,7 @@ and `pro_evidence` (size 1..S).
 
 | function | purpose |
 |---|---|
-| `default_priors()` | elicited prior hyperparameters |
+| `default_priors()` | default (illustrative) prior hyperparameters |
 | `build_stan_data()` | assemble the Stan data list |
 | `fit_hierarchical()`, `fit_independence()` | fit a single model |
 | `fit_replicability()` | one-call wrapper (fits + all metrics) |
@@ -89,6 +106,8 @@ package ships a synthetic dataset (`synthetic_data`) with the same structure.
 
 ## Reproducing the paper
 
-The `code/` folder of the source repository contains the scripts used for the
-manuscript (`run_models.R`, `simulation.R`, `prior_sensitivity.R`); the vignette
-walks through the whole procedure on the synthetic data.
+The analysis scripts live in the companion repository
+[The-Quantification-Of-Replicability](https://github.com/esteralongi/The-Quantification-Of-Replicability)
+(`analysis/`: `0_motivating_example.R`, `1_fit_replicability.R`,
+`2_prior_sensitivity.R`, `3_simulation.R`, `4_figures.R`). The vignette walks
+through the whole procedure on the synthetic data.

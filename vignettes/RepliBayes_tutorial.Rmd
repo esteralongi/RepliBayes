@@ -96,7 +96,7 @@ gen_col <- "#2C3E50"; prior_col <- "grey50"; obs_col <- "#0072B2"; pred_col <- "
 ```
 
 ```{r data}
-data(synthetic_data)         # columns: study, x, m
+data(synthetic_data)         # columns: study, x, y
 show_tbl(head(synthetic_data), caption = "First rows of the synthetic data")
 show_tbl(as.data.frame(table(synthetic_data$study),
                        responseName = "n"),
@@ -198,8 +198,8 @@ show_tbl(rstan::summary(res$fit_independence,
 
 # Reading the metrics
 
-Each row is a metric; `p` is the posterior probability and `mcse` its Monte Carlo
-error (`k`, `n`, `ess` are the count, sample size and effective sample size behind
+Each row is a metric; `estimate` is the posterior probability and `mcse` its Monte Carlo
+error (`n_event`, `n_draws`, `ess` are the count, sample size and effective sample size behind
 each probability).
 
 ```{r metrics}
@@ -348,7 +348,7 @@ prior_hier  <- compute_replication_probs_hier(
   generative_beta = mu_prior, eps = eps, consensus_level = 2)
 
 tri_plot <- function(prior_named, post_tbl, metrics, title) {
-  post_p <- stats::setNames(post_tbl$p, post_tbl$metric)
+  post_p <- stats::setNames(post_tbl$estimate, post_tbl$metric)
   pri    <- unlist(prior_named)
   d <- data.frame(metric = metrics,
                   Prior = as.numeric(pri[metrics]), Posterior = as.numeric(post_p[metrics]))
@@ -386,9 +386,9 @@ tri_plot(prior_hier, res$metrics_hierarchical, metrics_k2, "Hierarchical model")
 shared <- intersect(res$metrics_independence$metric, res$metrics_hierarchical$metric)
 dih <- rbind(
   data.frame(res$metrics_independence[res$metrics_independence$metric %in% shared,
-                                      c("metric","p")], model = "Independent"),
+                                      c("metric","estimate")], model = "Independent"),
   data.frame(res$metrics_hierarchical[res$metrics_hierarchical$metric %in% shared,
-                                      c("metric","p")], model = "Hierarchical"))
+                                      c("metric","estimate")], model = "Hierarchical"))
 dih$metric <- factor(dih$metric, levels = metrics_k2)
 dih$model  <- factor(dih$model, levels = c("Independent","Hierarchical"))
 ggplot(dih, aes(metric, p, fill = model)) +
@@ -579,11 +579,11 @@ and any body of evidence chosen by explicit study indices. For example:
 b <- lapply(1:5, function(i) rnorm(4000, 1, 0.4))          # posterior draws, 5 studies
 replication_ess(b, generative_beta = rnorm(4000, 1, 0.4), eps = 0.2, consensus_level = 3, min_corroborating = 2)
 
-## fit_replicability() takes a data frame (columns study, x, m), not a list of
+## fit_replicability() takes a data frame (columns study, x, y), not a list of
 ## draws, because it fits the models from the raw data.
 five_study_data <- do.call(rbind, lapply(1:5, function(s) {
   x <- sample(0:2, 200, replace = TRUE)
-  data.frame(study = s, x = x, m = rnorm(200, 8 + 0.5 * x, 2))
+  data.frame(study = s, x = x, y = rnorm(200, 8 + 0.5 * x, 2))
 }))
 res_five_study <- fit_replicability(five_study_data, consensus_level = c(2, 3),
                   retro_target = 5, retro_evidence = c(1, 2, 3, 4),

@@ -13,9 +13,9 @@ of a new study's effect.}
 \item{eps}{Practical-relevance threshold on the scale of the effects.}
 }
 \value{
-A \link[tibble:tibble]{tibble} with columns \code{metric}, \code{p}, \code{k}, \code{n},
-\code{ess}, \code{mcse} for the prospective metrics (\code{P_non_null_p}, \code{P_null_p},
-\code{P_pos_p}, \code{P_neg_p}).
+A \link[tibble:tibble]{tibble} with columns \code{metric}, \code{estimate},
+\code{n_event}, \code{n_draws}, \code{ess}, \code{mcse} for the prospective metrics
+(\code{P_non_null_p}, \code{P_null_p}, \code{P_pos_p}, \code{P_neg_p}).
 }
 \description{
 Marginal replication probabilities of a single future study-specific effect

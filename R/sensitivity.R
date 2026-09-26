@@ -32,7 +32,7 @@
 #' the chosen percentile). Each setting is refit with adaptive convergence and
 #' the replication metrics are recomputed with [replication_ess()].
 #'
-#' @param data A data frame with columns `study`, `x`, `m`.
+#' @param data A data frame with columns `study`, `x`, `y`.
 #' @param priors Prior hyperparameters (see [default_priors()]).
 #' @param eps Practical-relevance threshold; if `NULL`, 10\% of the baseline
 #'   (predictor = 0) mean outcome.
@@ -73,7 +73,7 @@ sensitivity_prior <- function(data, priors = default_priors(), eps = NULL,
                               chains = 4, iter_start = 3000, iter_max = 24000,
                               seed = 42, adapt_delta = 0.99, max_treedepth = 15,
                               verbose = TRUE) {
-  stopifnot(all(c("study", "x", "m") %in% names(data)))
+  stopifnot(all(c("study", "x", "y") %in% names(data)))
   target <- match.arg(target)
   if (is.null(eps)) eps <- .default_eps(data)
   nu  <- priors$nu
@@ -142,8 +142,8 @@ sensitivity_prior <- function(data, priors = default_priors(), eps = NULL,
 
   ## wide metric-by-percentile matrix (every metric returned)
   metric_order <- unique(sens_long$metric)
-  sub    <- sens_long[, c("metric", "prior_med", "p")]
-  p_grid <- stats::xtabs(p ~ metric + prior_med, data = sub)[metric_order, , drop = FALSE]
+  sub    <- sens_long[, c("metric", "prior_med", "estimate")]
+  p_grid <- stats::xtabs(estimate ~ metric + prior_med, data = sub)[metric_order, , drop = FALSE]
 
   list(metrics = sens_long, grid = meta_df, p_grid = p_grid)
 }

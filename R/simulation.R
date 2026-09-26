@@ -9,7 +9,7 @@
   df_list <- lapply(seq_len(S), function(s) {
     X <- sample(c(0, 1, 2), N_s[s], replace = TRUE, prob = geno_probs[[s]])
     M <- stats::rnorm(N_s[s], mean = a_s[s] + b_s[s] * X, sd = sig_s[s])
-    data.frame(study = s, x = X, m = M)
+    data.frame(study = s, x = X, y = M)
   })
   do.call(rbind, df_list)
 }
@@ -31,7 +31,7 @@
 #'
 #' @param fit A fitted hierarchical model: a [rstan::stanfit-class] object or a
 #'   `RepliBayes` object (from [fit_replicability()]).
-#' @param data A data frame with columns `study`, `x`, `m`, giving the study
+#' @param data A data frame with columns `study`, `x`, `y`, giving the study
 #'   sample sizes and genotype frequencies to reuse in the simulation.
 #' @param priors Prior hyperparameters used both as the ground-truth prior of
 #'   the varied component and as the prior of the fitted model
@@ -83,7 +83,7 @@ simulate_replicability <- function(fit, data, priors = default_priors(), eps = N
     if (is.null(eps)) eps <- fit$eps
     fit <- fit$fit_hierarchical
   }
-  stopifnot(all(c("study", "x", "m") %in% names(data)))
+  stopifnot(all(c("study", "x", "y") %in% names(data)))
   if (is.null(eps)) eps <- .default_eps(data)
   nu  <- priors$nu
   say <- function(...) if (verbose) message(...)
