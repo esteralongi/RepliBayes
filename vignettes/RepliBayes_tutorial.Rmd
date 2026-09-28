@@ -391,7 +391,7 @@ dih <- rbind(
                                       c("metric","estimate")], model = "Hierarchical"))
 dih$metric <- factor(dih$metric, levels = metrics_k2)
 dih$model  <- factor(dih$model, levels = c("Independent","Hierarchical"))
-ggplot(dih, aes(metric, p, fill = model)) +
+ggplot(dih, aes(metric, estimate, fill = model)) +
   geom_col(position = position_dodge2(preserve = "single"), width = .7,
            colour = "black", linewidth = .3) +
   scale_fill_manual(values = c(Independent = "#7F8C8D", Hierarchical = "#A51C30")) +
@@ -508,7 +508,7 @@ mean it is driven by it.
 ```{r sensitivity-plot, fig.width = 8, fig.height = 6}
 sm <- sens$metrics[sens$metrics$metric %in% metrics_k2, ]
 sm$metric <- factor(sm$metric, levels = metrics_k2)
-ggplot(sm, aes(prior_med, p)) +
+ggplot(sm, aes(prior_med, estimate)) +
   geom_line(color = "#457B9D", linewidth = .6) +
   geom_point(color = "#457B9D", size = 1.2) +
   facet_wrap(~ metric, labeller = as_labeller(lab, label_parsed)) +
