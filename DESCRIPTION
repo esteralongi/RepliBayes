@@ -27,8 +27,7 @@ Suggests:
     patchwork,
     knitr,
     rmarkdown,
-    BiocStyle,
-    testthat (>= 3.0.0)
+    BiocStyle
 SystemRequirements: GNU make
 VignetteBuilder: knitr
 RoxygenNote: 7.3.3
