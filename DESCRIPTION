@@ -3,7 +3,7 @@ Type: Package
 Title: Bayesian Quantification of Replicability
 Version: 0.1.0
 Authors@R: c(
-    person("Ester", "Alongi", email = "ealongi@hsph.harvard.edu",
+    person("Ester", "Alongi", email = "ester.alongi@phd.unipd.it",
            role = c("aut", "cre")),
     person("Gianmarco", "Altoe", role = "aut"),
     person("Giovanni", "Parmigiani", role = "aut"))
