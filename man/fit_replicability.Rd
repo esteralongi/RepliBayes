@@ -26,12 +26,12 @@ fit_replicability(
 )
 }
 \arguments{
-\item{data}{A data frame with columns \code{study}, \code{x}, \code{m}.}
+\item{data}{A data frame with columns \code{study}, \code{x}, \code{y}.}
 
 \item{priors}{Prior hyperparameters (see \code{\link[=default_priors]{default_priors()}}).}
 
 \item{eps}{Practical-relevance threshold on the scale of the effects. If
-\code{NULL} (default) it is set to 10\% of the baseline (predictor = 0) mean
+\code{NULL} (default) it is set to 10\\% of the baseline (predictor = 0) mean
 outcome.}
 
 \item{consensus_level}{Consensus level(s) passed to \code{\link[=replication_ess]{replication_ess()}}: at
@@ -74,7 +74,7 @@ the \code{priors}, the fitted models, and the metric tables
 }
 \description{
 Fits the hierarchical and independence-limit models and returns all
-replication probabilities (empirical, retrospective and prospective), each
+replication probabilities (hierarchical, independence-limit, retrospective and prospective), each
 with its Monte Carlo standard error.
 }
 \examples{

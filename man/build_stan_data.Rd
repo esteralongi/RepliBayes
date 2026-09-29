@@ -12,7 +12,7 @@ build_stan_data(
 }
 \arguments{
 \item{data}{A data frame with (at least) the columns \code{study} (group label),
-\code{x} (predictor, e.g. genotype dosage) and \code{m} (outcome).}
+\code{x} (predictor, e.g. genotype dosage) and \code{y} (outcome).}
 
 \item{priors}{A list of prior hyperparameters, as returned by
 \code{\link[=default_priors]{default_priors()}}.}

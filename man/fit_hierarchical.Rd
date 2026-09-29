@@ -2,7 +2,7 @@
 % Please edit documentation in R/fit.R
 \name{fit_hierarchical}
 \alias{fit_hierarchical}
-\title{Fit the hierarchical (partial-pooling) model}
+\title{Fit the hierarchical model}
 \usage{
 fit_hierarchical(
   data,
@@ -18,7 +18,7 @@ fit_hierarchical(
 )
 }
 \arguments{
-\item{data}{A data frame with columns \code{study}, \code{x}, \code{m}.}
+\item{data}{A data frame with columns \code{study}, \code{x}, \code{y}.}
 
 \item{priors}{Prior hyperparameters (see \code{\link[=default_priors]{default_priors()}}).}
 
@@ -35,5 +35,5 @@ the per-chain sampler output. Set e.g. \code{refresh = 200} to see progress.}
 A \link[rstan:stanfit-class]{rstan::stanfit} object.
 }
 \description{
-Fit the hierarchical (partial-pooling) model
+Fit the hierarchical model
 }

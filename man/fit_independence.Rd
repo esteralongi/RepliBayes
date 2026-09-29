@@ -18,7 +18,7 @@ fit_independence(
 )
 }
 \arguments{
-\item{data}{A data frame with columns \code{study}, \code{x}, \code{m}.}
+\item{data}{A data frame with columns \code{study}, \code{x}, \code{y}.}
 
 \item{priors}{Prior hyperparameters (see \code{\link[=default_priors]{default_priors()}}).}
 

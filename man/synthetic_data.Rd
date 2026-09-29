@@ -3,13 +3,13 @@
 \docType{data}
 \name{synthetic_data}
 \alias{synthetic_data}
-\title{Synthetic study-level dataset}
+\title{Synthetic dataset}
 \format{
 A data frame with 1070 rows and 3 columns:
 \describe{
 \item{study}{integer study/group label (1, 2, 3).}
 \item{x}{predictor (genotype dosage, 0/1/2).}
-\item{m}{outcome (expression on the analysis scale).}
+\item{y}{outcome (expression on the analysis scale).}
 }
 }
 \source{

@@ -22,11 +22,11 @@ sensitivity_prior(
 )
 }
 \arguments{
-\item{data}{A data frame with columns \code{study}, \code{x}, \code{m}.}
+\item{data}{A data frame with columns \code{study}, \code{x}, \code{y}.}
 
 \item{priors}{Prior hyperparameters (see \code{\link[=default_priors]{default_priors()}}).}
 
-\item{eps}{Practical-relevance threshold; if \code{NULL}, 10\% of the baseline
+\item{eps}{Practical-relevance threshold; if \code{NULL}, 10\\% of the baseline
 (predictor = 0) mean outcome.}
 
 \item{target}{Which heterogeneity's prior to shift: \code{"tau_beta"} (effect,

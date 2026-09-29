@@ -2,7 +2,7 @@
 % Please edit documentation in R/metrics.R
 \name{compute_replication_probs_indep}
 \alias{compute_replication_probs_indep}
-\title{Study-level replication probabilities (independence limit)}
+\title{Study-level replication probabilities (independence-limit)}
 \usage{
 compute_replication_probs_indep(
   beta,

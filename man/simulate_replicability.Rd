@@ -27,7 +27,7 @@ simulate_replicability(
 \item{fit}{A fitted hierarchical model: a \link[rstan:stanfit-class]{rstan::stanfit} object or a
 \code{RepliBayes} object (from \code{\link[=fit_replicability]{fit_replicability()}}).}
 
-\item{data}{A data frame with columns \code{study}, \code{x}, \code{m}, giving the study
+\item{data}{A data frame with columns \code{study}, \code{x}, \code{y}, giving the study
 sample sizes and genotype frequencies to reuse in the simulation.}
 
 \item{priors}{Prior hyperparameters used both as the ground-truth prior of
@@ -35,7 +35,7 @@ the varied component and as the prior of the fitted model
 (see \code{\link[=default_priors]{default_priors()}}).}
 
 \item{eps}{Practical-relevance threshold; if \code{NULL}, taken from the \code{RepliBayes}
-object or computed as 10\% of the baseline mean outcome.}
+object or computed as 10\\% of the baseline mean outcome.}
 
 \item{vary}{Which generative component to vary across levels: \code{"tau_beta"}
 (effect heterogeneity, default), \code{"tau_alpha"} (intercept heterogeneity) or

@@ -18,5 +18,5 @@ A numeric vector of posterior-predictive draws of the new effect.
 }
 \description{
 Draws the posterior-predictive effect of a new study from a fitted
-hierarchical model: for each posterior draw, \code{mu_beta + t_nu * tau_beta}.
+hierarchical model.
 }

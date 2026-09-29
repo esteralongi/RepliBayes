@@ -8,8 +8,7 @@
 \description{
 A Bayesian hierarchical framework that quantifies the replicability of an
 effect across several studies as posterior probabilities, defined relative to
-a practical-relevance threshold on the scale of the effects (\code{eps}) rather
-than on p-values.
+a practical-relevance threshold on the scale of the effects (\code{eps}).
 }
 \details{
 There are two ways to use the package, depending on your input.
@@ -20,8 +19,8 @@ predictor) and \code{y} (the outcome), everything runs from a single call:
 \describe{
 \item{\code{\link[=fit_replicability]{fit_replicability()}}}{fits the hierarchical (partial-pooling) and
 independence-limit models and returns all replication probabilities
-(hierarchical, independent, retrospective and prospective), each with a Monte
-Carlo standard error.}
+(hierarchical, independent, retrospective and prospective), each with a
+Monte Carlo standard error.}
 \item{\code{\link[=sensitivity_prior]{sensitivity_prior()}}}{prior-sensitivity analysis: refits the model
 while shifting the prior on a chosen between-study heterogeneity.}
 \item{\code{\link[=simulate_replicability]{simulate_replicability()}}}{calibration by simulation, varying one
@@ -32,10 +31,10 @@ Priors are chosen with \code{\link[=default_priors]{default_priors()}} or suppli
 truncated-Student-t helpers \code{\link[=qt_trunc_scaled_vec]{qt_trunc_scaled_vec()}} and \code{\link[=rtrunc_t_pos]{rtrunc_t_pos()}}).
 
 \strong{From posterior draws.} If you have already fitted your own model and
-have posterior draws of the study-specific effects, you can compute the metrics
-directly, without a data frame. These take the draws as a list of \code{S}
-[iterations x chains] matrices (one per study), and optionally the draws of the
-generative effect:
+have posterior draws of the study-specific effects, you can compute the
+metrics directly, without a data frame. These take the draws as a list of \code{S}
+[iterations x chains] matrices (one per study), and optionally the draws of
+the generative effect:
 \describe{
 \item{\code{\link[=compute_replication_probs_indep]{compute_replication_probs_indep()}}, \code{\link[=compute_replication_probs_hier]{compute_replication_probs_hier()}}}{point
 estimates of all replication probabilities.}
@@ -68,7 +67,7 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Ester Alongi \email{ealongi@hsph.harvard.edu}
+\strong{Maintainer}: Ester Alongi \email{ester.alongi@phd.unipd.it}
 
 Authors:
 \itemize{

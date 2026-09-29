@@ -19,8 +19,8 @@ single chain). Extract with \code{rstan::extract(fit, permuted = FALSE)} to keep
 the chain structure so the ESS reflects the MCMC autocorrelation.}
 
 \item{generative_beta}{Optional matrix of posterior draws of the generative
-effect (\code{mu_beta}). If \code{NULL} (default) only the study-level metrics are
-returned (independence limit); if supplied, the generative-consistency
+effect. If \code{NULL} (default) only the study-level metrics are
+returned (independence-limit); if supplied, the generative-consistency
 metrics are added (hierarchical model).}
 
 \item{eps}{Practical-relevance threshold on the scale of the effects.}
@@ -30,7 +30,7 @@ metrics are added (hierarchical model).}
 Default 2.}
 
 \item{min_corroborating}{For the per-study conditional metrics, the minimum
-number of \emph{other} studies required to corroborate the discovery of the
+number of other studies required to corroborate the discovery of the
 reference study. Default 1.}
 }
 \value{
@@ -38,14 +38,13 @@ A \link[tibble:tibble]{tibble} with one row per metric and columns
 \code{metric}, \code{estimate}, \code{n_event}, \code{n_draws}, \code{ess}, \code{mcse}: the metric name,
 the posterior estimate (\code{estimate}), the number of draws meeting the event
 (\code{n_event}), the number of draws (\code{n_draws}; for conditional metrics, the
-number satisfying the conditioning event), the effective sample size (\code{ess}),
-and the Monte Carlo standard error (\code{mcse}).
+number satisfying the conditioning event), the effective sample size
+(\code{ess}), and the Monte Carlo standard error (\code{mcse}).
 }
 \description{
-Study-level and (optionally) generative-consistency replication
-probabilities for a general number of studies \code{S} and consensus level \code{k},
-each reported with its Monte Carlo standard error. This is the function used
-to build the supplement tables.
+Replication probabilities for a general number of studies \code{S} and consensus level
+\code{consensus_level}, each reported with its Monte Carlo standard error.
+This is the function used to build the supplement tables.
 }
 \details{
 For a metric with all-zero draws the rule of three gives an upper

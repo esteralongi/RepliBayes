@@ -16,7 +16,7 @@ compute_replication_probs_hier(
 \item{beta}{A list of \code{S} posterior-draw matrices [iterations x chains] (or
 vectors) of the study-specific effects.}
 
-\item{generative_beta}{Posterior draws of the generative effect (\code{mu_beta}),
+\item{generative_beta}{Posterior draws of the generative effect (\code{generative_beta }),
 paired draw-by-draw with the study effects in \code{beta}.}
 
 \item{eps}{Practical-relevance threshold on the scale of the effects.}
