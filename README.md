@@ -56,6 +56,14 @@ priors$mu_beta <- 0
 res <- fit_replicability(synthetic_data, priors = priors, eps = 0.86)
 ```
 
+Compare each posterior probability with the value it already takes under the
+prior alone (same metric tables, computed on i.i.d. prior draws):
+
+```r
+pri <- prior_replicability(priors = default_priors(), eps = 0.86, S = 3)
+pri$metrics_hierarchical      # same columns as res$metrics_hierarchical, joinable by `metric`
+```
+
 ## The three entry points
 
 ```r
@@ -92,6 +100,7 @@ and `pro_evidence` (size 1..S).
 | `build_stan_data()` | assemble the Stan data list |
 | `fit_hierarchical()`, `fit_independence()` | fit a single model |
 | `fit_replicability()` | one-call wrapper (fits + all metrics) |
+| `prior_replicability()` | the same metrics under the prior alone (reference for `fit_replicability()`) |
 | `sensitivity_prior()` | prior-sensitivity over a heterogeneity's prior |
 | `simulate_replicability()` | simulation calibration, varying the generative model |
 | `replication_ess()` | metrics with MCSE (hierarchical / independence) |
